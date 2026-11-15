@@ -24,7 +24,7 @@ from cs336_alignment.vllm_utils import VLLMServer
 MODEL = "allenai/OLMo-2-0425-1B"
 GROUP_SIZE = 8    # 每道题采几条回答
 N_PROMPTS = 32    # 每步几道题 → 32 × 8 = 256 条，正好一个 rollout batch
-STEPS = 200
+STEPS = 150       # 按每步 50 秒算约 2 小时
 GRADIENT_ACCUMULATION_STEPS = 32   # 256 / 32 = 8 条一微批次，正好一个 group
 
 # 模板里是 "\\boxed{{}}"：先把双反斜杠减半，再让 format 还原花括号、填题目
@@ -64,6 +64,14 @@ def evaluate(server: VLLMServer, val: list[dict], seed: int = 0) -> float:
     return sum(scores) / len(scores)
 
 
+def dump(server: VLLMServer, rows: list[dict], path: str) -> None:
+    """存完整回答，训练前后各一次，用来人眼对比。"""
+    responses = sample(server, [r["q"] for r in rows], 1, seed=0)
+    with open(path, "w") as f:
+        for r, out in zip(rows, responses):
+            f.write(f"题目: {r['q']}\n标准答案: {r['a']}\n模型回答:\n{out.text}\n{'-' * 60}\n")
+
+
 train = load("data/gsm8k/train.jsonl", 6400)
 val = load("data/gsm8k/test.jsonl", 1024)
 
@@ -73,6 +81,9 @@ optimizer = torch.optim.AdamW(policy.parameters(), lr=1e-5, betas=(0.9, 0.95), w
 server = VLLMServer(model_id=MODEL, port=8000, launch_server=False)
 server.start()
 server.init_weight_sync("cuda")   # 建立 NCCL 连接，只做一次
+
+PROBE = val[:20]                  # 固定这 20 题，训练前后各答一遍
+dump(server, PROBE, "rollout_before.txt")
 
 for step in range(STEPS):
     batch = train[step * N_PROMPTS : (step + 1) * N_PROMPTS]
@@ -97,5 +108,7 @@ for step in range(STEPS):
     if step % 40 == 0:   # 每 40 步看一条真实输出，确认格式没崩
         print("  rollout:", rollout_responses[0].text[-200:].replace("\n", " "))
 
-    if step % 10 == 0:   # 注意顺序：先同步权重再验证，否则测的是旧策略
+    if step % 20 == 0:   # 注意顺序：先同步权重再验证，否则测的是旧策略
         print(f"  val reward {evaluate(server, val):.3f}")
+
+dump(server, PROBE, "rollout_after.txt")
