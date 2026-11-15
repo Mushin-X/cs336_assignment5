@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS336 作业 5（对齐）：推理强化学习</title>
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    tags: 'ams'
+  },
+  options: { ignoreHtmlClass: 'no-math' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+<style>
+:root {
+  --orange: #ff851b;
+  --orange-soft: #fff8f1;
+  --blue: #0074d9;
+  --ink: #161616;
+  --muted: #5b5b5b;
+  --line: #e2e2e2;
+  --sidebar: 318px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--ink);
+  font-family: "STIX Two Text", "Noto Serif SC", "Songti SC", Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  line-height: 1.68;
+  -webkit-font-smoothing: antialiased;
+  transition: padding-left .22s ease;
+}
+.container { max-width: 1000px; margin: 0 auto; padding: 54px 52px 100px; }
+.doc-title { margin: 0 0 20px; text-align: center; font-size: 1.95em; line-height: 1.25; }
+.title-sub { text-align: center; }
+.title-version { color: #444; font-size: .92em; }
+.title-team { margin-top: 12px; font-weight: 700; }
+.title-date { margin-top: 4px; }
+.translation-note {
+  margin: 26px 0 12px;
+  padding: 12px 16px;
+  border-left: 3px solid #999;
+  background: #f6f6f6;
+  color: #3e3e3e;
+  font-size: .92em;
+}
+h2, h3, h4, h5 { font-family: inherit; color: #050505; scroll-margin-top: 24px; }
+h2 { margin: 2.25em 0 .72em; font-size: 1.46em; }
+h3 { margin: 1.85em 0 .58em; font-size: 1.21em; }
+h4 { margin: 1.55em 0 .48em; font-size: 1.06em; }
+h5 { margin: 1.35em 0 .42em; font-size: 1em; }
+p { margin: 0 0 .92em; }
+ol, ul { margin: 0 0 1em; padding-left: 1.75em; }
+li { margin: .28em 0; }
+a { color: #075ea8; text-decoration: none; overflow-wrap: anywhere; }
+a:hover { text-decoration: underline; }
+code {
+  font-family: "SFMono-Regular", "Cascadia Code", Consolas, monospace;
+  font-size: .87em;
+}
+:not(pre) > code {
+  padding: .08em .26em;
+  border-radius: 3px;
+  background: #f1f1f1;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+pre {
+  margin: 1.15em 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  border: 1px solid #e5e5e5;
+  border-radius: 5px;
+  background: #f8f8f8;
+  color: #111;
+  font: .79em/1.5 "SFMono-Regular", "Cascadia Code", Consolas, monospace;
+  tab-size: 4;
+}
+pre code { display: block; min-width: 100%; width: max-content; font: inherit; background: none; }
+.table-wrap { width: 100%; margin: 1.4em 0; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .93em; }
+th, td { min-width: 8.5rem; padding: 8px 10px; border: 1px solid #bcbcbc; text-align: left; vertical-align: top; }
+th { text-align: center; }
+tr:nth-child(even) { background: #fafafa; }
+.problem-box {
+  margin: 1.5em 0;
+  padding: 13px 17px 15px;
+  border: 2px solid var(--orange);
+  background: linear-gradient(180deg, var(--orange-soft), #fff 70px);
+  break-inside: avoid;
+}
+.problem-box > .problem-heading { margin: 0 0 .75em; padding-bottom: .52em; border-bottom: 1px solid #cfcfcf; }
+.problem-box > :last-child { margin-bottom: 0; }
+.deliverable { margin-top: .75em; font-weight: 500; }
+.deliverable::before { content: "✓ "; color: #b95f00; font-weight: 700; }
+.math-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+mjx-container[display="true"] {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.algorithm-wrap {
+  width: 100%;
+  margin: 1.45em 0 1.8em;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+.algorithm {
+  min-width: 780px;
+  padding: 0 0 .48em;
+  border-top: 4px solid #111;
+  border-bottom: 4px solid #111;
+  font-size: .96em;
+  line-height: 1.52;
+}
+.algorithm-title {
+  padding: .2em .15em .25em;
+  border-bottom: 2px solid #111;
+  font-size: 1.05em;
+}
+.algorithm-io { padding: .38em 1.2em 0; }
+.algorithm-label {
+  display: inline-block;
+  min-width: 3.6em;
+  font-weight: 700;
+}
+.algorithm-body { margin-top: .35em; }
+.algorithm-line {
+  display: grid;
+  grid-template-columns: 2.3em minmax(0, 1fr);
+  align-items: stretch;
+}
+.algorithm-number {
+  padding: .1em .65em 0 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.algorithm-line.unnumbered .algorithm-number { visibility: hidden; }
+.algorithm-step {
+  position: relative;
+  min-width: 0;
+  padding: .08em .8em .08em 1em;
+  border-left: 2px solid #aaa;
+}
+.algorithm-line.in-loop .algorithm-step { padding-left: 2.25em; }
+.algorithm-line.in-loop .algorithm-step::before {
+  position: absolute;
+  inset: 0 auto 0 1em;
+  border-left: 2px solid #b8b8b8;
+  content: "";
+}
+.algorithm-step > :last-child { margin-bottom: 0; }
+.algorithm-step .math-display { margin: .2em 0 .42em; }
+.algorithm-step mjx-container[display="true"] { margin: .45em 0 !important; }
+#toc {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 1000;
+  width: var(--sidebar);
+  overflow-y: auto;
+  padding: 18px 16px 38px;
+  border-right: 1px solid var(--line);
+  background: rgba(250,250,250,.98);
+  box-shadow: 1px 0 8px rgba(0,0,0,.04);
+  transform: translateX(0);
+  transition: transform .22s ease;
+}
+body.toc-hidden #toc { transform: translateX(-100%); }
+.toc-header { margin: 0 70px 10px 0; padding-bottom: 9px; border-bottom: 1px solid var(--line); font-weight: 700; }
+.toc-list { margin: 0; padding: 0; list-style: none; }
+.toc-list li { margin: .15em 0; line-height: 1.42; }
+.toc-list a { display: block; padding: 2px 5px; border-radius: 4px; color: #333; }
+.toc-list a:hover, .toc-list a.active { background: #ececec; color: #064f91; text-decoration: none; }
+.toc-l3 { padding-left: 14px; font-size: .93em; }
+.toc-l4 { padding-left: 29px; font-size: .86em; }
+#toc-toggle {
+  position: fixed;
+  top: 15px;
+  right: 17px;
+  z-index: 1200;
+  min-width: 92px;
+  padding: 7px 12px;
+  cursor: pointer;
+  border: 1px solid #bdbdbd;
+  border-radius: 999px;
+  background: rgba(255,255,255,.96);
+  color: #333;
+  font: 600 13px/1.2 system-ui, sans-serif;
+  box-shadow: 0 2px 10px rgba(0,0,0,.12);
+}
+#toc-toggle:hover { border-color: #777; color: #000; }
+@media (min-width: 1180px) { body:not(.toc-hidden) { padding-left: var(--sidebar); } }
+@media (max-width: 1179px) {
+  #toc { box-shadow: 4px 0 18px rgba(0,0,0,.16); }
+  .container { padding: 48px 30px 80px; }
+}
+@media (max-width: 620px) {
+  body { font-size: 16px; }
+  .container { padding: 58px 19px 70px; }
+  #toc { width: min(88vw, var(--sidebar)); }
+  #toc-toggle { top: 10px; right: 10px; }
+  .algorithm { min-width: 740px; font-size: .92em; }
+}
+@media print {
+  body { padding-left: 0 !important; font-size: 11pt; }
+  #toc, #toc-toggle { display: none !important; }
+  .container { max-width: none; padding: 0; }
+  .problem-box { break-inside: avoid; }
+  .algorithm-wrap { overflow: visible; }
+  .algorithm { min-width: 0; break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<nav id="toc" aria-label="全局目录">
+  <div class="toc-header">目录</div>
+  <ul class="toc-list"><li class="toc-l2"><a href="#sec-2-1">1 作业概述</a></li><li class="toc-l4"><a href="#sec-4-2">你将实现的内容</a></li><li class="toc-l4"><a href="#sec-4-3">你将运行的实验</a></li><li class="toc-l4"><a href="#sec-4-4">代码结构</a></li><li class="toc-l4"><a href="#sec-4-5">如何提交</a></li><li class="toc-l2"><a href="#sec-2-6">2 引言</a></li><li class="toc-l3"><a href="#sec-3-7">2.1 背景</a></li><li class="toc-l3"><a href="#sec-3-8">2.2 模型与数据集</a></li><li class="toc-l3"><a href="#sec-3-9">2.3 符号约定</a></li><li class="toc-l2"><a href="#sec-2-10">3 Prompting</a></li><li class="toc-l3"><a href="#sec-3-11">3.1 使用 vLLM 进行 inference</a></li><li class="toc-l3"><a href="#sec-3-12">3.2 Zero-shot、few-shot 与 chain-of-thought prompting</a></li><li class="toc-l3"><a href="#sec-3-13">3.3 评分函数</a></li><li class="toc-l3"><a href="#sec-3-14">3.4 实验</a></li><li class="toc-l2"><a href="#sec-2-16">4 Group Relative Policy Optimization</a></li><li class="toc-l3"><a href="#sec-3-17">4.1 推导 on-policy GRPO</a></li><li class="toc-l4"><a href="#sec-4-18">4.1.1 把语言模型视为 policy</a></li><li class="toc-l4"><a href="#sec-4-19">4.1.2 Trajectory</a></li><li class="toc-l4"><a href="#sec-4-20">4.1.3 Reward 与 return</a></li><li class="toc-l4"><a href="#sec-4-21">4.1.4 Policy gradient</a></li><li class="toc-l4"><a href="#sec-4-22">4.1.5 Baseline</a></li><li class="toc-l4"><a href="#sec-4-25">4.1.6 Advantage normalization</a></li><li class="toc-l4"><a href="#sec-4-26">4.1.7 Sequence normalization</a></li><li class="toc-l4"><a href="#sec-4-27">4.1.8 汇总完整算法</a></li><li class="toc-l3"><a href="#sec-3-28">4.2 实现 on-policy GRPO</a></li><li class="toc-l4"><a href="#sec-4-29">4.2.1 使用 Hugging Face 模型</a></li><li class="toc-l4"><a href="#sec-4-32">4.2.2 在 reinforcement learning 循环中使用 vLLM</a></li><li class="toc-l4"><a href="#sec-4-33">4.2.3 GRPO 组件</a></li><li class="toc-l4"><a href="#sec-4-38">4.2.4 GRPO training step</a></li><li class="toc-l3"><a href="#sec-3-42">4.3 实验</a></li><li class="toc-l2"><a href="#sec-2-46">5 RL 算法变体</a></li><li class="toc-l3"><a href="#sec-3-47">5.1 Dr. GRPO</a></li><li class="toc-l3"><a href="#sec-3-51">5.2 Rejection fine-tuning</a></li><li class="toc-l3"><a href="#sec-3-53">5.3 MaxRL</a></li><li class="toc-l3"><a href="#sec-3-57">5.4 实验</a></li><li class="toc-l2"><a href="#sec-2-60">6 Off-policy RL</a></li><li class="toc-l3"><a href="#sec-3-61">6.1 Importance reweighting</a></li><li class="toc-l3"><a href="#sec-3-62">6.2 PPO／GRPO 风格的 importance reweighting 与 clipping</a></li><li class="toc-l4"><a href="#sec-4-63">6.2.1 Token-level reweighting</a></li><li class="toc-l4"><a href="#sec-4-65">6.2.2 Clipping</a></li><li class="toc-l3"><a href="#sec-3-67">6.3 GSPO</a></li><li class="toc-l3"><a href="#sec-3-70">6.4 实验</a></li><li class="toc-l2"><a href="#sec-2-73">7 尝试你自己的 policy gradient estimator</a></li><li class="toc-l3"><a href="#sec-3-75">参考文献</a></li></ul>
+</nav>
+<button id="toc-toggle" type="button" aria-controls="toc" aria-expanded="true">隐藏目录</button>
+<main class="container">
+  <h1 class="doc-title">CS336 作业 5（对齐）：推理强化学习</h1>
+  <div class="title-sub title-version">版本 26.0.0</div>
+  <div class="title-sub title-team">CS336 教学团队</div>
+  <div class="title-sub title-date">2026 年春季</div>
+  <div class="translation-note">说明：本译文以 OCR Markdown 作为高效遍历层，并依据原 PDF 校正公式、代码、题目边界及 OCR 缺漏。模型名、数据集名、API、命令、代码标识符和常用技术术语保留英文。</div>
+<h2 id="sec-2-1">1 作业概述</h2>
+<p>在本次作业中，你将获得训练语言模型进行推理并解决下游任务的实践经验。</p>
+<h4 id="sec-4-2">你将实现的内容</h4>
+<ol>
+<li>Zero-shot、few-shot 和 chain-of-thought prompting。</li>
+<li>Group Relative Policy Optimization（GRPO）：一种利用外部 reward 提升模型表现的强化学习算法。</li>
+<li>Policy gradient 估计器的多种变体，用于探索 variance reduction 与 importance weight clipping 策略。</li>
+</ol>
+<h4 id="sec-4-3">你将运行的实验</h4>
+<ol>
+<li>测量 OLMo-2-0425-1B 使用不同 prompt 在 GSM8K 上的表现。</li>
+<li>在 OLMo-2-0425-1B 上运行 on-policy GRPO，提高其在 GSM8K 上的表现。</li>
+<li>运行 RFT、Dr. GRPO 和 MaxRL 等 RL 变体，探索 RL 中不同算法选择的影响。</li>
+<li>运行 off-policy GRPO，以加快训练并探索不同的 clipping 策略。</li>
+</ol>
+<h4 id="sec-4-4">代码结构</h4>
+<p>本作业的全部代码和说明文档均可在 GitHub 仓库中获取：<a href="https://github.com/stanford-cs336/assignment5-alignment">https://github.com/stanford-cs336/assignment5-alignment</a>。请使用 <code>git clone</code> 克隆该仓库。如果后续有更新，我们会发出通知；届时你可以使用 <code>git pull</code> 获取最新内容。</p>
+<ol>
+<li><code>cs336_alignment/*</code>：你将在这里编写作业 5 的代码。除下文介绍的 starter code 外，该目录中没有其他代码，因此你可以从头组织自己的实现。</li>
+<li><code>cs336_alignment/vllm_utils.py</code>：包含启动 vLLM server、生成 response 以及同步权重的代码。</li>
+<li><code>cs336_alignment/drgrpo_grader.py</code>：包含对数学题模型输出进行评分的代码。</li>
+<li><code>cs336_alignment/prompts/*</code>：为了方便使用，我们提供了一些 prompt 文本文件。</li>
+<li><code>tests/*.py</code>：包含必做的 GRPO 测试，以及可选的 alignment／safety 补充测试。</li>
+</ol>
+<p>必做测试 <code>tests/test_grpo.py</code> 会调用 <code>tests/adapters.py</code> 中定义的 hooks。你需要实现这些 adapters，将自己的代码接入测试。编写更多测试和／或修改测试代码有助于调试，但你的实现最终应能通过原始测试套件。</p>
+<ol start="6">
+<li><code>README.md</code>：包含环境设置的基本说明。</li>
+</ol>
+<h4 id="sec-4-5">如何提交</h4>
+<p>你需要向 Gradescope 提交以下文件：</p>
+<ul>
+<li><code>writeup.pdf</code>：回答所有书面问题。请使用排版系统整理答案。</li>
+<li><code>code.zip</code>：包含你编写的全部代码。</li>
+</ul>
+<p>运行 <code>test_and_make_submission.sh</code> 脚本即可生成 <code>code.zip</code>。</p>
+<h2 id="sec-2-6">2 引言</h2>
+<h3 id="sec-3-7">2.1 背景</h3>
+<p>在本课程的前四次作业中，我们学习了如何预训练 base model。现在，我们将开始学习 post-training：有了 base model 之后，怎样把它变成一个能够解决下游任务的实用工具？</p>
+<p>Post-training 的一个组成部分是 alignment。由于预训练所使用的数据混合和训练目标，模型会获得范围广泛的知识与行为。但当我们要求模型解决任务时，我们希望它表现出一种特定行为——成为有帮助且无害的助手。把功能宽泛的 base model 转变为目标明确的 chat model，这一过程称为“instruction tuning”或“alignment”。我们会在可选的作业 5 补充材料中介绍这些技术。</p>
+<p>Post-training 的另一个组成部分是 reinforcement learning。预训练的目标是让模型获得广泛的知识，因此会使用范围很广的数据（例如互联网上的文本）。而在 post-training RL 中，我们的目标收窄了：希望模型在某个特定任务（例如解决数学题）上取得较高准确率。这个更聚焦的目标与预训练至少有两点不同：(a) 我们不再拥有同样规模的数据；(b) 训练目标从“coverage”（拥有广泛的知识基础）转变为“precision”（生成准确的 response）。由于存在这些差异，我们需要使用一种新的技术，即 reinforcement learning（RL）。</p>
+<p>在 RL 中，我们会得到一个问题数据集，以及一个判断 response 是否正确解决问题的评分函数。例如，在编程场景中，我们可能得到一道编程题（如“编写一个反转列表的 Python 函数”），而评分函数由一组测试用例组成（如 <code>assert f([0, 1, 2]) == [2, 1, 0]</code>）。在数学场景中，我们可能得到一道数学推理应用题（如“如果四年前 Tom 的年龄是 John 的一半，而 John 现在 20 岁，那么 Tom 现在多少岁？”），评分函数则解析最终答案并检查它是否正确（答案为 12）。值得注意的是，与预训练不同，我们并没有一个可供模仿的 response 数据集：在编程示例中，我们没有能正确解决任务的 Python 程序；在数学推理示例中，我们也没有能够推出答案的正确推理链。相反，RL 会直接以模型准确率为目标执行梯度更新。从高层来看，RL 会从模型中采样 response，使用评分函数为其打分，再提高正确 response 的权重。</p>
+<p>本次作业将从数学和实验两个角度学习 RL。RL 很难，因为它速度慢且不稳定；对 RL 进行科学实验也很难，因为不同 random seed 下的运行结果具有很大方差，而且实现中看似微小的细节可能带来显著影响。本作业将介绍 LLM RL，并探索其中的一些挑战。</p>
+<h3 id="sec-3-8">2.2 模型与数据集</h3>
+<p>本作业使用 OLMo-2-0425-1B。该 base model 先在 OLMo-mix-1124 上进行预训练，再在 Dolmino-mix-1124 上进行 mid-training，总计使用 4 万亿个 token。OLMo-mix-1124 的主体是我们在课程中介绍过的 DCLM-Baseline [J. Li et al., 2024]；Dolmino-mix-1124 则是一种更聚焦的数据混合，其中约 50% 为 DCLM，另外 50% 由 instruction following、数学、代码、STEM 论文和 wiki 数据组成。关于 OLMo-2-0425-1B 的其他细节，请参阅 OLMo 2 技术报告 [T. OLMo et al., 2024]。学到这里，你应该已经具备理解其中各项设计决策所需的背景知识。</p>
+<p>下游任务使用 GSM8K 数据集 [K. Cobbe et al., 2021]。你可以在作业仓库的 <code>data/gsm8k/train.jsonl</code> 与 <code>data/gsm8k/test.jsonl</code> 中找到它。该数据集由一组相对简单的小学数学推理应用题组成。下面给出一个示例：</p>
+<pre><code class="language-json">{
+  &quot;question&quot;: &quot;Natalia sold clips to 48 of her friends in April, and then she sold half as many clips in May. How many clips did Natalia sell altogether in April and May?&quot;,
+  &quot;answer&quot;: &quot;Natalia sold 48/2 = &lt;&lt;48/2=24&gt;&gt;24 clips in May.\nNatalia sold 48+24 = &lt;&lt;48+24=72&gt;&gt;72 clips altogether in April and May.\n#### 72&quot;
+}
+</code></pre>
+<p>在 RL 过程中，模型将学习为这类问题生成推理链，从而提高解决数学题的能力。</p>
+<p>关于模型和数据集选择，需要说明一点：受资源限制，我们只选择了一个小规模的模型—数据集组合用作 RL 试验平台。具体而言，这个小模型在极大量 token（参数量的 4000 倍）上完成了训练，因此能力相当不错，使我们可以在较小规模和真实数据集上观察到合理的 RL 结果。遗憾的是，我们在本课程中训练的模型能力太弱，无法解决数学题。如果你在完成本作业后仍有兴趣，也可以尝试在一个更简单的任务上对自己训练的模型运行 RL。RL 的训练动态高度依赖模型与数据集，因此请记住：本作业中观察到的结果未必能迁移到其他模型—数据集组合。</p>
+<h3 id="sec-3-9">2.3 符号约定</h3>
+<p>本作业包含一些数学内容。下表列出了后文会使用的部分符号。语言建模和 reinforcement learning 经常使用不同术语指代同一个对象，因此表中同时列出了两套术语。如果你忘记了某个符号的含义，可以随时回来查看。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>符号</th>
+<th>LM 术语</th>
+<th>RL 术语</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$\rho$</td>
+<td>prompt distribution 或 dataset</td>
+<td>initial state distribution</td>
+<td>prompt／问题上的分布。</td>
+</tr>
+<tr>
+<td>$x$</td>
+<td>prompt；question</td>
+<td>initial state</td>
+<td>从 $\rho$ 中采样得到的一个 prompt／问题。</td>
+</tr>
+<tr>
+<td>$y$</td>
+<td>response；completion；generation；sample</td>
+<td>rollout；trajectory；sampled action sequence</td>
+<td>针对 prompt $x$ 采样得到的答案。</td>
+</tr>
+<tr>
+<td>$y_t$</td>
+<td>token</td>
+<td>action</td>
+<td>$y$ 中生成的第 $t$ 个 token。</td>
+</tr>
+<tr>
+<td>$y_{&lt;t}$</td>
+<td>prefix</td>
+<td>—</td>
+<td>位置 $t$ 之前生成的所有 token，即 $y_1,\ldots,y_{t-1}$。</td>
+</tr>
+<tr>
+<td>$\pi_\theta$</td>
+<td>model</td>
+<td>policy</td>
+<td>参数为 $\theta$ 的模型；它会针对给定 prompt $x$，为 response $y$ 分配概率 $\pi_\theta(y\mid x)$。</td>
+</tr>
+<tr>
+<td>$\pi_\theta(y_t\mid x,y_{&lt;t})$</td>
+<td>next-token distribution</td>
+<td>timestep $t$ 的 policy</td>
+<td>给定 prompt 和此前生成的 token 时，token $y_t$ 的条件概率。</td>
+</tr>
+<tr>
+<td>$r(y\mid x)$</td>
+<td>—</td>
+<td>reward</td>
+<td>表示所采样 response 是否正确的标量分数（本作业中取 0 或 1）。</td>
+</tr>
+<tr>
+<td>$B$</td>
+<td>每个 batch 的 prompt 数量</td>
+<td>—</td>
+<td>每个 inference batch 中的 prompt 数量。</td>
+</tr>
+<tr>
+<td>$G$</td>
+<td>每个 prompt 的 generation 数量</td>
+<td>group size</td>
+<td>为每个 prompt 采样的 response 数量。</td>
+</tr>
+<tr>
+<td>$\operatorname{len}(y)$ 或 $L$</td>
+<td>response length</td>
+<td>horizon</td>
+<td>一个 response 中生成的 token 数量。</td>
+</tr>
+<tr>
+<td>$A^{(i,j)}$</td>
+<td>—</td>
+<td>advantage</td>
+<td>完成 baseline 与归一化后，分配给第 $i$ 个 prompt 的第 $j$ 个 response 的权重。</td>
+</tr>
+</tbody></table></div>
+<h2 id="sec-2-10">3 Prompting</h2>
+<p>把预训练 base model 应用于下游任务的第一步，是向它提供 prompt。Base model 在预训练期间学习了范围广泛的行为，而 prompting 是一种轻量级方法，可以把模型的行为引导到解决任务的模式。后文还会看到，prompt 的选择也会影响 RL 的训练动态和探索过程。</p>
+<p>最基本的 prompting 方法是仅提供问题，再从模型的 next-token distribution 中采样生成答案；我们把这种策略称为 <code>question_only</code>。我们会把它与 <code>r1_zero</code> prompt 进行比较，后者既包含问题，也包含要求模型执行 chain-of-thought reasoning 的指令 [DeepSeek-AI et al., 2025]。</p>
+<h3 id="sec-3-11">3.1 使用 vLLM 进行 inference</h3>
+<p>为了让模型生成 response，我们需要一个 inference engine。实现 inference engine 超出了本作业的范围，因此这里使用 vLLM [W. Kwon et al., 2023]。它实现了多种优化，包括快速 CUDA kernel、用于高效 attention KV cache 的 PagedAttention 等。用于启动 vLLM server 和生成 response 的代码已经提供在 <code>cs336_alignment/vllm_utils.py</code> 中，其接口如下：</p>
+<pre><code class="language-python">@dataclass
+class VLLMCompletion:
+    text: str
+    token_ids: list[int]
+    finish_reason: str | None
+
+@dataclass
+class VLLMServer:
+    model_id: str
+    gpu: int = 0
+    seed: int = 0
+    gpu_memory_utilization: float = 0.9
+
+    def start(self) -&gt; None: ...
+
+    def generate_completions(
+        self,
+        prompts: list[str],
+        sampling_params: dict,
+        batch_size: int | None = None,
+    ) -&gt; list[VLLMCompletion]: ...
+</code></pre>
+<h3 id="sec-3-12">3.2 Zero-shot、few-shot 与 chain-of-thought prompting</h3>
+<p>除非另有说明，在 GSM8K 实验中我们使用来自 DeepSeek R1-Zero 模型的以下 prompt [DeepSeek-AI et al., 2025]，并将其称为 <code>r1_zero</code> prompt：</p>
+<pre><code class="language-text">A conversation between User and Assistant. The User asks a question, and the Assistant solves it. The Assistant first thinks about the reasoning process in the mind and then provides the User with the answer. The reasoning process is enclosed within &lt;think&gt; &lt;/think&gt; and the answer is enclosed within &lt;answer&gt; &lt;/answer&gt; tags, respectively, i.e., &lt;think&gt; reasoning process here &lt;/think&gt; &lt;answer&gt; answer here &lt;/answer&gt;.
+User: {question}
+Assistant: &lt;think&gt;
+</code></pre>
+<p><code>r1_zero</code> prompt 位于文本文件 <code>cs336_alignment/prompts/r1_zero.prompt</code> 中。</p>
+<p>其中，<code>question</code> 指我们插入的一道题目（例如：“Natalia 在四月向 48 位朋友出售了夹子，五月出售的数量是四月的一半。Natalia 在四月和五月一共出售了多少个夹子？”）。我们希望模型扮演 Assistant 的角色：由于 prompt 已经给出了起始 <code>&lt;think&gt;</code> 标签，模型应从生成思考过程开始，随后使用 <code>&lt;/think&gt;</code> 结束思考，再在 answer 标签中生成最终的符号答案，例如 <code>&lt;answer&gt; 4x + 10 &lt;/answer&gt;</code>。要求模型生成 <code>&lt;answer&gt; &lt;/answer&gt;</code> 等标签，是为了方便解析模型输出并与 ground-truth answer 比较，同时也便于在看到 <code>&lt;/answer&gt;</code> 结束标签时停止生成。</p>
+<p>另一种 prompting 方法称为 few-shot prompting：先在真正的问题前添加少量 question—answer pair。<code>r1_zero</code> prompt 的 few-shot 版本如下：</p>
+<pre><code class="language-text">A conversation between User and Assistant. The User asks a question, and the Assistant solves it. The Assistant first thinks about the reasoning process in the mind and then provides the User with the answer. The reasoning process is enclosed within &lt;think&gt; &lt;/think&gt; and the answer is enclosed within &lt;answer&gt; &lt;/answer&gt; tags, respectively, i.e., &lt;think&gt; reasoning process here &lt;/think&gt; &lt;answer&gt; answer here &lt;/answer&gt;.
+User: {question-1}
+Assistant: &lt;think&gt; {reasoning-1} &lt;/think&gt; &lt;answer&gt; {answer-1} &lt;/answer&gt;
+User: {question-2}
+Assistant: &lt;think&gt; {reasoning-2} &lt;/think&gt; &lt;answer&gt; {answer-2} &lt;/answer&gt;
+User: {question-3}
+Assistant: &lt;think&gt; {reasoning-3} &lt;/think&gt; &lt;answer&gt; {answer-3} &lt;/answer&gt;
+User: {question}
+Assistant: &lt;think&gt;
+</code></pre>
+<p>Few-shot prompting 会向模型提供少量目标任务的示例，因而能够改善模型表现。开放 base model 报告的 benchmark 数值通常来自 few-shot 设置：例如，OLMo-2-0425-1B model card 中报告的 GSM8K 结果使用了 8-shot prompting。我们在 <code>cs336_alignment/prompts/r1_zero_three_shot_gsm8k.prompt</code> 中提供了 <code>r1_zero</code> 的 3-shot 版本，其中的示例取自 OLMES 仓库。</p>
+<p>最后，我们还会使用 <code>question_only</code> prompt 作为 baseline；该 prompt 位于 <code>cs336_alignment/prompts/question_only.prompt</code>：</p>
+<pre><code class="language-text">{question} Please put your final answer within \boxed{{}}.
+</code></pre>
+<p>虽然该 prompt 名为 <code>question_only</code>，但我们仍要求模型把最终答案放在 <code>\boxed{}</code> 中，以便 grader 从 response 中解析答案；下一节会进一步讨论这一点。</p>
+<h3 id="sec-3-13">3.3 评分函数</h3>
+<p>模型生成 response 后，我们需要检查它是否正确。数学题会提供 ground-truth answer（例如 0.5），但模型可能以多种形式给出正确答案，例如 <code>&lt;answer&gt; 1/2 &lt;/answer&gt;</code> 或 <code>The answer is 0.5.</code>。因此，为了正确评估模型输出，需要一个答案解析函数：输入模型输出和已知的 ground truth，返回一个表示模型输出是否正确的布尔值。</p>
+<p>实验中使用近期 reasoning RL 工作所采用的一种快速且相当准确的答案解析器 [Z. Liu et al., 2025]。对于 <code>r1_zero</code> prompt，该 reward function 实现在 <code>cs336_alignment.drgrpo_grader.r1_zero_reward_fn</code> 中。<code>question_only</code> prompt 不要求模型使用 <code>&lt;think&gt;</code> 和 <code>&lt;answer&gt;</code> 标签，因此应改用同一 grader 文件中的 <code>cs336_alignment.drgrpo_grader.question_only_reward_fn</code> 评估。注意，<code>question_only</code> 解析器会在 <code>\boxed{}</code> 中查找最终答案。这些 reward function 会返回 total reward，以及分别表示 response 是否遵循预期格式、解析出的答案是否正确的 format reward 和 answer reward。有些工作会为格式正确但答案错误的 response 提供部分分数（即非零 total reward）；本实验不提供部分分数，因此 total reward 就等于 answer reward，format reward 只用于日志记录。</p>
+<p>这些 reward function 要求 <code>ground_truth</code> 参数仅包含答案。GSM8K 数据集中 ground-truth response 的格式为 <code>{rationale} #### {answer}</code>；你应在 <code>####</code> 处分割字符串并去除两端空白，从中提取答案。</p>
+<h3 id="sec-3-14">3.4 实验</h3>
+<p>现在可以评估 base model 在不同 prompting 方法下的表现了。</p>
+<p><strong>Generation 超参数。</strong> 生成 response 时，使用 temperature 1.0、top-p 1.0 和最大 generation length 512。<code>r1_zero</code> prompt 要求模型使用字符串 <code>&lt;/answer&gt;</code> 结束答案，因此可以指示 vLLM 在模型输出该字符串时停止：</p>
+<pre><code class="language-python"># Based on Dr. GRPO: stop when the model completes its answer
+# https://github.com/sail-sg/understand-r1-zero/blob/
+#   c18804602b85da9e88b4aeeb6c43e2f08c594fbc/train_zero_math.py#L167
+sampling_params[&#39;stop&#39;] = [&quot;&lt;/answer&gt;&quot;]
+sampling_params[&#39;include_stop_str_in_output&#39;] = True
+</code></pre>
+<p>只对 <code>r1_zero</code> 和 <code>r1_zero_three_shot</code> prompt 使用该 stop string；不要把它用于 <code>question_only</code> prompt。</p>
+<h4 class="problem-heading" id="sec-4-15">问题（<code>prompting_baselines</code>）：在 GSM8K 上运行 OLMo-2-0425-1B（5 分）</h4>
+<p>(a) 编写一个脚本，分别使用 zero-shot <code>question_only</code>、zero-shot <code>r1_zero</code> 和 few-shot <code>r1_zero_three_shot</code> prompt，评估 OLMo-2-0425-1B 在 GSM8K 上的表现。</p>
+<p>然后运行脚本并观察输出。对于每种 prompt，分别有多少条模型 generation 属于以下三类：(1) 答案正确，且 format reward 与 correctness reward 均为 1；(2) format reward 为 1、correctness reward 为 0；(3) format reward 与 correctness reward 均为 0？请至少观察第 2 类中的十个样例：其中有多少模型输出其实正确，只是没有被正确解析？第 3 类的情况又如何？</p>
+<p class="deliverable"><strong>提交内容：</strong> 几句分析、评估指标，以及若干 prompt 与 response 示例。</p>
+<p>(b) 观察模型输出，概括模型在每种 prompt 下的行为。例如，如果希望模型回答问题，仅提供问题本身是否足够？模型会不会表现出回答问题之外的其他行为？zero-shot <code>r1_zero</code> 与 few-shot <code>r1_zero_three_shot</code> prompt 分别如何塑造模型的行为？</p>
+<p class="deliverable"><strong>提交内容：</strong> 几句分析，并附上支持结论的示例。</p>
+<h2 id="sec-2-16">4 Group Relative Policy Optimization</h2>
+<p>现在，我们已经测量了仅使用 prompting 时的模型表现；下一步是通过训练提升这种表现。具体而言，我们希望优化模型的准确率，或者等价地，优化它的期望 reward：</p>
+<div class="math-display">$
+J_\theta = \mathbb{E}_{x\sim\rho}\mathbb{E}_{y\sim\pi_\theta(y\mid x)}[r(y\mid x)]. \tag{1}
+$</div>
+
+<p>其中，$\rho$ 是由 prompt／问题 $x$ 构成的任务分布，$\pi_\theta$ 是模型，$y$ 是针对 $x$ 采样得到的 response／解答，而 $r(y\mid x)$ 表示 $y$ 是否为 $x$ 的正确答案（我们也把 $r$ 称为 reward function）。这个目标与此前研究的 pretraining 目标很不一样：cross-entropy loss $\mathbb{E}_{x\sim\mathcal D}[-\log\pi_\theta(x)]$ 从数据集 $\mathcal D$ 中抽取样本，而这里的准确率目标包含了对模型自身生成样本的期望。因此，我们需要使用新的工具来优化这个目标，尤其是 reinforcement learning（RL）。从高层来看，RL 会从模型中采样 response，使用评分函数为其打分，再强化其中正确的 response。RL 往往速度慢、难度高，因此本作业很大一部分内容都会用于探索如何让它更快、更稳定。</p>
+<p>RL 的另一个特点是：它需要从模型中采样，所以训练动态会受到采样时所用 prompt 的影响。语言模型研究中有一项令人振奋的发现：使用 chain-of-thought reasoning prompt 时，在较强的 base model 上执行 RL，可以显著提升模型的推理能力 [OpenAI et al., 2024；DeepSeek-AI et al., 2025]。因此，本作业除了探索 RL 的核心算法思想外，还会研究它与 chain-of-thought prompting 等语言建模技术之间的相互作用。</p>
+<h3 id="sec-3-17">4.1 推导 on-policy GRPO</h3>
+<p>我们将先研究 RL 背后的数学原理，并逐步推导出 Group Relative Policy Optimization（GRPO）算法。这是一种训练语言模型时常用的 RL 算法 [Z. Shao et al., 2024]。</p>
+<p>这里的讲解主要参考了两份对这些概念有更深入介绍的优秀材料：OpenAI 的 <em>Spinning Up in Deep RL</em> [J. Achiam, 2018]，以及 Nathan Lambert 的 <em>Reinforcement Learning from Human Feedback (RLHF) Book</em> [N. Lambert, 2024]。</p>
+<h4 id="sec-4-18">4.1.1 把语言模型视为 policy</h4>
+<p>传统 reinforcement learning 使用 policy 接收状态 $s_t$ 并输出 action $a_t$。执行该 action 后会得到某个 reward $r_t=r(s_t,a_t)$，随后从 next-state distribution 中采样得到后继状态 $s_{t+1}\sim\operatorname{next\_state}(s_t,a_t)$。Reinforcement learning 的目标，就是优化 policy 使其获得较高 reward。</p>
+<p>参数为 $\theta$ 的 causal language model（LM）$\pi_\theta$，会针对当前文本 prefix $y_{&lt;t}=(y_1,\ldots,y_{t-1})$ 定义 next token $y_t$ 上的概率分布。因此在 RL 语境中，可以把 next token $y_t$ 看作 action $a_t$，把当前文本 prefix $y_{&lt;t}$ 看作状态 $s_t$。于是，LM 就是一个 categorical stochastic policy：</p>
+<div class="math-display">$
+a_t\sim\pi_\theta(\cdot\mid s_t),\qquad
+\pi_\theta(a_t\mid s_t)=\big[\operatorname{softmax}(f_\theta(s_t))\big]_{a_t}. \tag{2}
+$</div>
+
+<p>使用 policy gradient 优化 policy 时，需要两种基本操作：</p>
+<ol>
+<li><strong>从 policy 中采样：</strong> 从上述 categorical distribution 中抽取 action $a_t$；</li>
+<li><strong>计算 action 的 log-likelihood：</strong> 求值 $\log\pi_\theta(a_t\mid s_t)$。</li>
+</ol>
+<p>一般而言，使用 LLM 做 RL 时，$s_t$ 是当前已经生成的部分 completion／解答，$a_t$ 则是解答中的 next token。当模型发出 end-of-text token（如 <code>&lt;|end_of_text|&gt;</code>；对于 <code>r1_zero</code> prompt 则是 <code>&lt;/answer&gt;</code>）时，episode 结束。</p>
+<h4 id="sec-4-19">4.1.2 Trajectory</h4>
+<p>在 reinforcement learning 中，我们首先从初始状态分布中采样 $s_0\sim\rho$，然后从 policy $\pi_\theta$ 中采样 action $a_t$，再按照某个 next-state distribution 转移到 $s_{t+1}\sim\operatorname{next\_state}(s_t,a_t)$，如此反复。这一系列状态和 action 构成一条 finite-horizon trajectory：</p>
+<div class="math-display">$
+\tau=(s_0,a_0,s_1,a_1,\ldots,s_T,a_T), \tag{3}
+$</div>
+
+<p>其中 $T$ 是 trajectory 的长度，即 $a_T$ 是 end-of-text token，或者 generation 已经达到最大 token budget。</p>
+<p>在本作业中，从 $s_0\sim\rho$ 采样得到的初始状态，就是包含待解决数学题（可能应用了 CoT prompting 或 few-shot）的 prompt $x$。以该 prefix 为起点，我们逐个采样 token；next state 等于旧 prefix 与新发出 token 的拼接，即 $s_{t+1}=(s_t,a_t)$。Trajectory 也称 episode 或 rollout；后文会交替使用这些术语。</p>
+<h4 id="sec-4-20">4.1.3 Reward 与 return</h4>
+<p>在 RL 中，标量 reward $r_t=r(s_t,a_t)$ 用于评价在状态 $s_t$ 下执行 action $a_t$ 的即时质量。对于本作业的数学应用题等可验证领域，中间推理步骤的 reward 均为 0，直到模型输出答案。随后，我们会在 terminal action 上获得经过验证的 reward：</p>
+<div class="math-display">$
+r_T=r(s_T,a_T):=
+\begin{cases}
+1, &amp; \text{若 reward function 判定 trajectory }\tau\text{ 的最终答案与 ground truth 一致},\\
+0, &amp; \text{否则}.
+\end{cases} \tag{4}
+$</div>
+
+<p>这里，如果最终答案正确，则 $r_T=1$；否则 $r_T=0$。Return $R(\tau)$ 聚合整条 trajectory 上的 reward，而在本作业中它就等于 $r_T$。</p>
+<p>Agent 的目标是最大化 expected return：</p>
+<div class="math-display">$
+J_\theta=\mathbb E_{\tau\sim\pi_\theta}[r(\tau)], \tag{5}
+$</div>
+
+<p>其中，$\tau\sim\pi_\theta$ 表示如下 trajectory distribution：先采样 $s_0\sim\rho$，随后不断从 policy 中采样 action，并从 next-state distribution 中采样后继状态。在本作业中，这意味着先从数据集中采样数学题 $x\sim\rho$，再逐个采样 token 直至 response 结束；该过程可以记为 $y\sim\pi_\theta(y\mid x)$。由此得到优化问题：</p>
+<div class="math-display">$
+\theta^*=\arg\max_\theta J_\theta. \tag{6}
+$</div>
+
+<h4 id="sec-4-21">4.1.4 Policy gradient</h4>
+<p>现在，我们已经具备学习 policy gradient 这一 RL 算法所需的符号和定义。在本作业余下部分中，我们统一使用语言模型符号 $(x,y)$ 表示 prompt 与 response，不再使用 RL 中的状态 $s_t$ 和 action $a_t$ 记号。</p>
+<p>回顾一下，我们希望优化模型的 expected reward（即准确率）：</p>
+<div class="math-display">$
+J_\theta=\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_\theta(y\mid x)}[r(y\mid x)], \tag{7}
+$</div>
+
+<p>其中 $r(y\mid x)$ 表示 response $y$ 是否正确回答 prompt $x$。我们打算对该目标执行 gradient ascent：</p>
+<div class="math-display">$
+\theta_{k+1}=\theta_k+\alpha\nabla_\theta J_{\theta_k}. \tag{8}
+$</div>
+
+<p>为此，必须能够根据样本估计梯度 $\nabla_\theta J_{\theta_k}$。把这个梯度改写成关于样本的期望，会得到称为“REINFORCE policy gradient”的表达式；该名称来自 REINFORCE 论文 [R. J. Williams, 1992]。具体而言，我们将证明：</p>
+<div class="math-display">$
+\nabla_\theta\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_\theta(y\mid x)}[r(y\mid x)]
+=\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_\theta(y\mid x)}
+\left[r(y\mid x)\nabla_\theta\log\pi_\theta(y\mid x)\right]. \tag{9}
+$</div>
+
+<p>在推导之前，先注意这个表达式直接给出了一种直观算法（REINFORCE）：从数据集中采样问题 $x$，从模型中采样 response $y$，对这些样本上的 $r(y\mid x)\nabla_\theta\log\pi_\theta(y\mid x)$ 求平均，然后执行一次 gradient step。表达式 $r(y\mid x)\nabla_\theta\log\pi_\theta(y\mid x)$ 的含义是：提高高 reward response $y$ 的 log probability。重复这一过程并执行多次 gradient step，就得到一个基本的 reinforcement learning 训练循环。</p>
+<p>推导 REINFORCE policy gradient 时，可以使用 log-derivative trick（回顾一下，$\log f(x)$ 的导数是 $f'(x)/f(x)$）：</p>
+<div class="math-display">$
+\nabla_\theta\pi_\theta(y\mid x)
+=\pi_\theta(y\mid x)\nabla_\theta\log\pi_\theta(y\mid x). \tag{10}
+$</div>
+
+<p>直接应用该恒等式即可得到所需结果：</p>
+<div class="math-display">$
+\nabla_\theta\mathbb E_{y\sim\pi_\theta(y\mid x)}[r(y\mid x)]
+=\sum_y\nabla_\theta\pi_\theta(y\mid x)r(y\mid x), \tag{11}
+$</div>
+
+<div class="math-display">$
+=\sum_y\pi_\theta(y\mid x)\nabla_\theta\log\pi_\theta(y\mid x)r(y\mid x), \tag{12}
+$</div>
+
+<div class="math-display">$
+=\mathbb E_{y\sim\pi_\theta(y\mid x)}
+\left[r(y\mid x)\nabla_\theta\log\pi_\theta(y\mid x)\right]. \tag{13}
+$</div>
+
+<p>这些等式省略了 prompt 上的期望 $\mathbb E_{x\sim\rho}$，因为 $\nabla_\theta$ 与 $\mathbb E_{x\sim\rho}$ 可以交换顺序。</p>
+<p>给定一批独立同分布的 prompt $x^{(1)},\ldots,x^{(B)}\overset{\mathrm{iid}}{\sim}\rho$，并为每个 prompt 采样 $G$ 个独立同分布的 response $y^{(i,j)}\overset{\mathrm{iid}}{\sim}\pi_\theta(y\mid x^{(i)})$，可以用以下样本估计 policy gradient：</p>
+<div class="math-display">$
+\hat g\leftarrow\frac{1}{BG}\sum_{i=1}^B\sum_{j=1}^G
+r\big(y^{(i,j)}\mid x^{(i)}\big)
+\nabla_\theta\log\pi_\theta\big(y^{(i,j)}\mid x^{(i)}\big). \tag{14}
+$</div>
+
+<p>该估计器会提高高 reward response 的权重。为了推导 GRPO，我们将从这个基本 policy gradient estimator 出发，逐项加入修改。</p>
+<h4 id="sec-4-22">4.1.5 Baseline</h4>
+<p>基本 REINFORCE policy gradient estimator 的期望确实是 $\nabla_\theta J_\theta$，但它具有很高的 variance，会导致 RL 不稳定。为了稳定训练并降低 variance，人们常用的一种工具是 baseline。</p>
+<p>Baseline 可以非常复杂；最简单的做法，是从 reward 中减去常数 $b$：</p>
+<div class="math-display">$
+\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_\theta(y\mid x)}
+\left[(r(y\mid x)-b)\nabla_\theta\log\pi_\theta(y\mid x)\right]. \tag{15}
+$</div>
+
+<p>例如，假设减去 $b=0.5$，且 reward $r$ 为二值变量（正确为 1，错误为 0）。使用该估计器时，我们会从模型中采样 response，把正确 response 的权重提高 $0.5$，并把错误 response 的权重降低 $0.5$。相比之下，原始 gradient estimator 会以权重 1 提高正确 response 的权重，而对错误 response 不做任何处理（权重为 0）。</p>
+<p>本节的关键数学结论是：只要 baseline $b$ 不依赖 action／response $y$，从 reward 中减去 $b$ 就不会改变估计器的期望。例如，$b$ 可以是常数、$x$ 的函数或 policy 的函数。只要 $b$ 不依赖 $y$，就有：</p>
+<div class="math-display">$
+\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_\theta(y\mid x)}
+\left[(r(y\mid x)-b)\nabla_\theta\log\pi_\theta(y\mid x)\right]
+=\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_\theta(y\mid x)}
+\left[r(y\mid x)\nabla_\theta\log\pi_\theta(y\mid x)\right]. \tag{16}
+$</div>
+
+<p>该结论可由以下恒等式直接推出：</p>
+<div class="math-display">$
+\mathbb E_{y\sim\pi_\theta(y\mid x)}
+[\nabla_\theta\log\pi_\theta(y\mid x)]
+=\nabla_\theta\mathbb E_{y\sim\pi_\theta(y\mid x)}[1]=0, \tag{17}
+$</div>
+
+<p>其中第一步相当于反向应用前面的 log-derivative trick。</p>
+<p>Baseline 虽不改变估计器的期望，却既可能增大 variance，也可能减小 variance。用符号表示：把 policy gradient estimator 写成样本均值 $\frac1n\sum_{i=1}^n Z_i$，其中每个 $Z_i$ 都是样本 $(x,y)$ 对应的表达式 $(r(y\mid x)-b)\nabla_\theta\log\pi_\theta(y\mid x)$，则估计器的 variance 为 $\frac{\mathbb E[Z_i^2]-\mathbb E[Z_i]^2}{n}$。下面的问题将探索 baseline 在什么情况下会增加或降低 variance。</p>
+<h4 class="problem-heading" id="sec-4-23">问题（<code>baseline_calcs</code>）：计算 policy gradient estimator 的 variance（5 分）</h4>
+<p>令 $\pi_\theta$ 定义二值 action space $\mathcal A=\{0,1\}$ 上的 policy，并满足 $\pi_\theta(A=1)=p=\sigma(\theta)$，其中 $\sigma$ 是 sigmoid function，$\sigma(\theta)=\frac{1}{1+e^{-\theta}}$。二值 reward function 在 action $A=1$ 时给出 reward 1，否则给出 reward 0，即 $r(A)=\mathbb 1\{A=1\}$。</p>
+<p>(a) 给定 $n$ 个独立同分布样本 $A_i\overset{\mathrm{iid}}{\sim}\pi_\theta$，考虑 policy gradient estimator：</p>
+<div class="math-display">$
+\frac1n\sum_{i=1}^n r(A_i)\nabla_\theta\log\pi_\theta(A_i). \tag{18}
+$</div>
+
+<p>这个估计器的 variance 是多少？</p>
+<p class="deliverable"><strong>提交内容：</strong> 用 $n$ 和 $p$ 表示的表达式，并附推导过程。</p>
+<p>(b) 给定 $n$ 个独立同分布样本 $A_i\overset{\mathrm{iid}}{\sim}\pi_\theta$，考虑经过 baseline 调整的 policy gradient estimator：</p>
+<div class="math-display">$
+\frac1n\sum_{i=1}^n(r(A_i)-b)\nabla_\theta\log\pi_\theta(A_i). \tag{19}
+$</div>
+
+<p>这个估计器的 variance 是多少？</p>
+<p class="deliverable"><strong>提交内容：</strong> 用 $n$、$b$ 和 $p$ 表示的表达式，并附推导与简要讨论。</p>
+<p>(c) 如果代入“population mean”baseline $b=p$，得到的 variance 是多少？</p>
+<p>把它与未调整 policy gradient estimator 的 variance 比较：它始终更低、始终更高，还是会随 $p$ 的取值有时更高、有时更低？</p>
+<h5 id="sec-5-24">GRPO 中的 baseline</h5>
+<p>GRPO 的第一项修改，是应用“group mean”baseline：</p>
+<div class="math-display">$
+\hat g\leftarrow\frac{1}{BG}\sum_{i=1}^B\sum_{j=1}^G
+\left(r\big(y^{(i,j)}\mid x^{(i)}\big)-\mu_i\right)
+\nabla_\theta\log\pi_\theta\big(y^{(i,j)}\mid x^{(i)}\big), \tag{20}
+$</div>
+
+<p>其中</p>
+<div class="math-display">$
+\mu_i=\frac1G\sum_{j=1}^G r\big(y^{(i,j)}\mid x^{(i)}\big),
+$</div>
+
+<p>即模型在 prompt $x^{(i)}$ 上的平均 reward。尽管 $\mu_i$ 依赖 response $y$，它仍能在乘上缩放因子 $\frac{G-1}{G}$ 的意义下保持期望：</p>
+<div class="math-display">$
+\begin{aligned}
+&amp;\mathbb E_{y^{(1)},\ldots,y^{(G)}\sim\pi_\theta(y\mid x)}
+\left[\frac1G\sum_{j=1}^G
+\left(r(y^{(j)}\mid x)-\mu_i\right)
+\nabla_\theta\log\pi_\theta(y^{(j)}\mid x)\right]\\
+&amp;=\frac1G\sum_{j=1}^G
+\mathbb E_{y^{(2)},\ldots,y^{(G)}\sim\pi_\theta(y\mid x)}
+\left[\mathbb E_{y^{(1)}\sim\pi_\theta(y\mid x)}
+\left[\left(r(y^{(1)}\mid x)-\mu_i\right)
+\nabla_\theta\log\pi_\theta(y^{(1)}\mid x)\right]\right]\\
+&amp;=\frac1G\sum_{j=1}^G
+\mathbb E_{y^{(1)}\sim\pi_\theta(y\mid x)}
+\left[\left(r(y^{(1)}\mid x)-\frac1G r(y^{(1)}\mid x)\right)
+\nabla_\theta\log\pi_\theta(y^{(1)}\mid x)\right]\\
+&amp;=\frac{G-1}{G}\mathbb E_{y\sim\pi_\theta(y\mid x)}
+\left[r(y\mid x)\nabla_\theta\log\pi_\theta(y\mid x)\right].
+\end{aligned} \tag{21--24}
+$</div>
+
+<p>经过 group mean 调整后的 reward 通常称为 advantage：它不再表示绝对 reward，而是表示某条 rollout 相对于平均 reward 的“优势”。</p>
+<h4 id="sec-4-25">4.1.6 Advantage normalization</h4>
+<p>GRPO 在减去 group mean 后的下一项修改，是除以 group standard deviation：</p>
+<div class="math-display">$
+\hat g\leftarrow\frac{1}{BG}\sum_{i=1}^B\sum_{j=1}^G
+\frac{r(y^{(i,j)}\mid x^{(i)})-\mu_i}{\operatorname{std}_i}
+\nabla_\theta\log\pi_\theta(y^{(i,j)}\mid x^{(i)}), \tag{25}
+$</div>
+
+<p>其中</p>
+<div class="math-display">$
+\operatorname{std}_i=
+\sqrt{\frac1G\sum_{j=1}^G\left(r(y^{(i,j)}\mid x^{(i)})-\mu_i\right)^2}.
+$</div>
+
+<p>注意，默认的 <code>torch.std</code> 为了 bias correction，会使用略有不同的 sample standard deviation 公式；你的实现应使用默认 <code>torch.std</code>。除以 standard deviation 后，估计器不再保持原有期望，因此我们也不再是在原目标 $J_\theta$（expected reward）上执行 gradient ascent。可以把这项修改理解为一种稳定性技巧：如果假设每个 gradient vector 都是独立同分布的 Gaussian，除以 group std 能让不同 group 的 gradient update 在范数上大致相等。下一节会更深入地讨论 advantage normalization。</p>
+<h4 id="sec-4-26">4.1.7 Sequence normalization</h4>
+<p>GRPO 还有一个似乎继承自早期 LLM-PPO 实现的细节，称为 sequence normalization。回顾目前得到的 policy gradient estimator；这里把 $\log\pi_\theta(y^{(i,j)}\mid x^{(i)})$ 展开成了各时间步之和：</p>
+<div class="math-display">$
+\hat g\leftarrow\frac{1}{BG}\sum_{i=1}^B\sum_{j=1}^G
+\frac{r(y^{(i,j)}\mid x^{(i)})-\mu_i}{\operatorname{std}_i}
+\nabla_\theta\sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\log\pi_\theta\left(y_t^{(i,j)}\mid x^{(i)},y_{&lt;t}^{(i,j)}\right). \tag{26}
+$</div>
+
+<p>GRPO 会进一步加入 sequence length normalization：</p>
+<div class="math-display">$
+\hat g\leftarrow\frac{1}{BG}\sum_{i=1}^B\sum_{j=1}^G
+\frac{r(y^{(i,j)}\mid x^{(i)})-\mu_i}{\operatorname{std}_i}
+\nabla_\theta\left(
+\frac{1}{\operatorname{len}(y^{(i,j)})}
+\sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\log\pi_\theta\left(y_t^{(i,j)}\mid x^{(i)},y_{&lt;t}^{(i,j)}\right)
+\right). \tag{27}
+$</div>
+
+<p>这项修改会进一步改变期望：它不再让不同 sequence 中的所有 token 拥有相同权重，而是让长 sequence 中的 token 相对于短 sequence 中的 token 权重更低。下一节将讨论这一选择，并通过 ablation 检验它是否合理。现在，我们先按原始论文给出的标准 GRPO 算法实现，因此会保留 sequence normalization。</p>
+<h4 id="sec-4-27">4.1.8 汇总完整算法</h4>
+<p>GRPO 还有一个尚未讨论的组成部分：clipped importance reweighting。我们会在后文讨论 off-policy RL 时介绍它。简单来说，off-policy RL 通过对每个 inference batch 执行多次 gradient step 来加快 RL；与之相对，on-policy RL 对每个 inference batch 只执行一次 gradient step。“Off-policy”这个名称表示：从第二次 gradient step 开始，inference batch 中的样本已经 stale，因为它们来自模型的旧版本。Importance reweighting 会修改 gradient estimator，使其能够使用这些 stale sample。现在只做 on-policy RL，因此暂时不需要 importance reweighting。</p>
+<p>至此，我们已经具备实现 on-policy GRPO 所需的全部组件。算法 1 给出了完整流程。</p>
+<div class="algorithm-wrap" role="region" aria-label="算法 1：On-policy Group Relative Policy Optimization（GRPO）">
+  <section class="algorithm">
+    <div class="algorithm-title"><strong>算法 1：</strong> On-policy Group Relative Policy Optimization（GRPO）</div>
+    <div class="algorithm-io"><span class="algorithm-label">输入</span>初始 policy model $\pi_{\theta_0}$；reward function $r$；task distribution（或 dataset）$\rho$；learning rate $\alpha$</div>
+    <div class="algorithm-io"><span class="algorithm-label">输出</span>$\pi_\theta$</div>
+    <div class="algorithm-body">
+      <div class="algorithm-line">
+        <div class="algorithm-number">1</div>
+        <div class="algorithm-step">令 policy model $\pi_\theta\leftarrow\pi_{\theta_0}$。</div>
+      </div>
+      <div class="algorithm-line">
+        <div class="algorithm-number">2</div>
+        <div class="algorithm-step">对 <code>step = 1, ..., n_grpo_steps</code> 重复：</div>
+      </div>
+      <div class="algorithm-line in-loop">
+        <div class="algorithm-number">3</div>
+        <div class="algorithm-step">采样一批问题 $x^{(1)},\ldots,x^{(B)}\overset{\mathrm{iid}}{\sim}\rho$。</div>
+      </div>
+      <div class="algorithm-line in-loop">
+        <div class="algorithm-number">4</div>
+        <div class="algorithm-step">为每个问题采样 $G$ 个输出：$y^{(i,1)},\ldots,y^{(i,G)}\overset{\mathrm{iid}}{\sim}\pi_\theta(y\mid x^{(i)})$。</div>
+      </div>
+      <div class="algorithm-line in-loop unnumbered">
+        <div class="algorithm-number">0</div>
+        <div class="algorithm-step">
+          <div>计算 on-policy GRPO policy gradient estimator：</div>
+          <div class="math-display">$
+          \hat g\leftarrow\frac{1}{BG}\sum_{i=1}^B\sum_{j=1}^G
+          \frac{1}{\operatorname{len}(y^{(i,j)})}
+          \sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+          \frac{r(y^{(i,j)}\mid x^{(i)})-\mu_i}{\operatorname{std}_i}
+          \nabla_\theta\log\pi_\theta\left(y_t^{(i,j)}\mid x^{(i)},y_{&lt;t}^{(i,j)}\right). \tag{28}
+          $</div>
+        </div>
+      </div>
+      <div class="algorithm-line in-loop">
+        <div class="algorithm-number">5</div>
+        <div class="algorithm-step">
+          <div>其中</div>
+          <div class="math-display">$
+          \mu_i=\frac1G\sum_{j=1}^G r(y^{(i,j)}\mid x^{(i)}) \tag{29}
+          $</div>
+          <p>表示 group mean，而</p>
+          <div class="math-display">$
+          \operatorname{std}_i=
+          \sqrt{\frac1G\sum_{j=1}^G\left(r(y^{(i,j)}\mid x^{(i)})-\mu_i\right)^2}. \tag{30}
+          $</div>
+          <p>表示 group standard deviation。</p>
+        </div>
+      </div>
+      <div class="algorithm-line in-loop">
+        <div class="algorithm-number">6</div>
+        <div class="algorithm-step">
+          <div>使用你偏好的 optimizer 更新 $\theta$（下式给出 stochastic gradient ascent 更新）：</div>
+          <div class="math-display">$
+          \theta\leftarrow\theta+\alpha\hat g. \tag{31}
+          $</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<h3 id="sec-3-28">4.2 实现 on-policy GRPO</h3>
+<h4 id="sec-4-29">4.2.1 使用 Hugging Face 模型</h4>
+<p>前几次作业使用了 <code>cs336_basics</code> 中自行实现的语言模型；本次作业则直接使用 Hugging Face <code>transformers</code> 库加载预训练 base model。如果愿意，你也可以自行实现 Transformer 和预训练权重加载器，但要确保模型架构与 OLMo-2-0425-1B 一致。</p>
+<p>可以使用下面的 starter code 加载 Hugging Face 模型和 tokenizer；它使用 bfloat16 和 FlashAttention-2 以节省显存。这段代码位于 <code>cs336_alignment/checkpoint.py</code>：</p>
+<pre><code class="language-python">import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+def get_model_and_tokenizer(model_id_or_dir: str, device: str):
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id_or_dir,
+        device_map=device,
+        torch_dtype=torch.bfloat16,
+        attn_implementation=&quot;eager&quot; if device == &quot;cpu&quot; else &quot;flash_attention_2&quot;,
+    )
+    tokenizer = AutoTokenizer.from_pretrained(model_id_or_dir)
+    return model, tokenizer
+</code></pre>
+<p><code>model_id_or_directory</code> 可以是 <code>allenai/OLMo-2-0425-1B</code> 这样的模型名，也可以是某个目录的路径。该目录通常由 <code>save_pretrained</code> 调用生成；你可以用它保存训练后的模型：</p>
+<pre><code class="language-python"># Save the model weights
+model.save_pretrained(save_directory=output_dir)
+tokenizer.save_pretrained(save_directory=output_dir)
+</code></pre>
+<p>首先实现一个 helper function，使用预训练 tokenizer 对输入 prompt 和 response 进行 tokenization。分别对 prompt 与 response 执行 tokenization，且不要添加 special token；随后直接拼接为 <code>prompt_ids + response_ids</code>，两者之间不插入 EOS、BOS 或 separator token。我们还需要构造 <code>response_mask</code>：这是一个与 shifted labels 对齐的 boolean mask。仅当相应 label token 来自 response 时取 <code>True</code>，prompt 与 padding 位置均取 <code>False</code>。训练循环会使用该 mask，确保 loss 只在 response token 上计算。</p>
+<h4 class="problem-heading" id="sec-4-30">问题（<code>tokenize_prompt_and_output</code>）：Prompt 与 output tokenization（1 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 实现 <code>tokenize_prompt_and_output</code>：分别对 prompt 和 output 进行 tokenization，在不插入 special token 的情况下拼接两者，并构造 <code>response_mask</code>。建议使用以下接口：</p>
+<pre><code class="language-python">def tokenize_prompt_and_output(
+    prompt_strs: list[str],
+    output_strs: list[str],
+    tokenizer: PreTrainedTokenizer,
+) -&gt; dict[str, torch.Tensor]:
+    &quot;&quot;&quot;Tokenize prompt and output strings and construct a label-aligned mask.
+
+    The mask is 1 for response tokens and 0 for prompt or padding tokens.
+    &quot;&quot;&quot;
+</code></pre>
+<p><strong>参数：</strong></p>
+<ul>
+<li><code>prompt_strs: list[str]</code>：prompt string 列表。</li>
+<li><code>output_strs: list[str]</code>：output string 列表。</li>
+<li><code>tokenizer: PreTrainedTokenizer</code>：执行 tokenization 使用的 tokenizer。</li>
+</ul>
+<p><strong>返回值：</strong></p>
+<p>设 <code>prompt_and_output_lens</code> 是一个列表，包含 tokenized prompt 与 output 拼接后的长度。返回字典应包含以下键：</p>
+<ul>
+<li><code>input_ids</code>：形状为 <code>(batch_size, max(prompt_and_output_lens) - 1)</code> 的 <code>torch.Tensor</code>；由 tokenized prompt 与 output string 构成，并去掉最后一个 token。</li>
+<li><code>labels</code>：形状为 <code>(batch_size, max(prompt_and_output_lens) - 1)</code> 的 <code>torch.Tensor</code>；即 shifted input ids，也就是去掉第一个 token 的 input ids。</li>
+<li><code>response_mask</code>：形状为 <code>(batch_size, max(prompt_and_output_lens) - 1)</code> 的 <code>torch.Tensor</code>；与 <code>labels</code> 对齐，相应 label token 属于 response 时取 1，否则取 0。</li>
+</ul>
+<p>为了测试代码，请实现 <code>[adapters.run_tokenize_prompt_and_output]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k test_tokenize_prompt_and_output
+</code></pre>
+<p>确保实现通过测试。</p>
+<p class="problem-box-end">得到 tokenized input 后，可以按如下方式送入模型：</p>
+<pre><code class="language-python">input_ids = train_batch[&quot;input_ids&quot;].to(device)
+labels = train_batch[&quot;labels&quot;].to(device)
+logits = model(input_ids).logits
+</code></pre>
+<p>接下来实现一个方法，计算模型在 response 每个 token 上的 log-probability；这是计算 policy gradient 所需的基本操作。RL 中也经常需要记录 per-token entropy，因此该函数还包含可选参数 <code>return_token_entropy</code>，你也需要实现它。</p>
+<h4 class="problem-heading" id="sec-4-31">问题（<code>get_response_log_probs</code>）：Response log-prob（以及 entropy）（1 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 实现 <code>get_response_log_probs</code>：从 causal language model 中取得 per-token conditional log-probability（条件为此前的 token），并可选地计算模型 next-token distribution 的 entropy。建议使用以下接口：</p>
+<pre><code class="language-python">def get_response_log_probs(
+    model: PreTrainedModel,
+    input_ids: torch.Tensor,
+    labels: torch.Tensor,
+    return_token_entropy: bool = False,
+) -&gt; dict[str, torch.Tensor]:
+</code></pre>
+<p><strong>参数：</strong></p>
+<ul>
+<li><code>model: PreTrainedModel</code>：用于评分的 Hugging Face 模型。它应已放在正确设备上；若无需计算 gradient，还应处于 inference mode。</li>
+<li><code>input_ids: torch.Tensor</code>：形状为 <code>(batch_size, sequence_length)</code>；由 tokenization 方法生成的 prompt + response token 拼接结果。</li>
+<li><code>labels: torch.Tensor</code>：形状为 <code>(batch_size, sequence_length)</code>；由 tokenization 方法生成的 labels。</li>
+<li><code>return_token_entropy: bool</code>：为 <code>True</code> 时，同时返回 per-token entropy。</li>
+</ul>
+<p><strong>返回值：</strong> <code>dict[str, torch.Tensor]</code>，包含：</p>
+<ul>
+<li><code>&quot;log_probs&quot;</code>：形状为 <code>(batch_size, sequence_length)</code>；条件 log-probability $\log p_\theta(x_t\mid x_{&lt;t})$。</li>
+<li><code>&quot;token_entropy&quot;</code>：可选；形状为 <code>(batch_size, sequence_length)</code>，表示每个位置的 per-token entropy。仅当 <code>return_token_entropy=True</code> 时存在。</li>
+</ul>
+<p>为了测试代码，请实现 <code>[adapters.run_get_response_log_probs]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k test_get_response_log_probs
+</code></pre>
+<p>确保测试通过。</p>
+<h4 id="sec-4-32">4.2.2 在 reinforcement learning 循环中使用 vLLM</h4>
+<p>RL 循环还需要生成 rollout。这里采用如下配置：把 Hugging Face 模型和 optimizer 放在一块 GPU 上训练，把 vLLM（包括模型与 KV cache）放在另一块 GPU 上。因此，除了前面介绍的 vLLM 初始化与 generation 函数外，每个 inference step 之前还需要在两个设备之间同步权重。相应代码位于 <code>cs336_alignment/vllm_utils.py</code>：</p>
+<pre><code class="language-python">@dataclass
+class VLLMServer:
+    gpu: int = 1  # Run training on GPU 0 and inference on GPU 1
+
+    # Create the NCCL weight-transfer group between the training GPU and vLLM.
+    def init_weight_sync(self, policy_device: str): ...
+
+    # Copy the current Hugging Face policy weights into the vLLM server and
+    # reset vLLM caches that depended on the old weights.
+    def sync_policy_weights(self, policy: torch.nn.Module) -&gt; None: ...
+
+    # Generate rollouts from the current vLLM weights.
+    def generate_completions(
+        self,
+        prompts: list[str],
+        sampling_params: dict,
+        batch_size: int | None = None,
+    ) -&gt; list[VLLMCompletion]: ...
+</code></pre>
+<p>与 prompting 实验相同，采样时使用 temperature 1.0、top-p 1.0 和最大 generation length 512。Prompt 要求模型用字符串 <code>&lt;/answer&gt;</code> 结束答案，因此可以让 vLLM 在输出该字符串时停止：</p>
+<pre><code class="language-python"># Based on Dr. GRPO: stop when the model completes its answer
+# https://github.com/sail-sg/understand-r1-zero/blob/
+#   c18804602b85da9e88b4aeeb6c43e2f08c594fbc/train_zero_math.py#L167
+sampling_params[&#39;stop&#39;] = [&quot;&lt;/answer&gt;&quot;]
+sampling_params[&#39;include_stop_str_in_output&#39;] = True
+</code></pre>
+<h4 id="sec-4-33">4.2.3 GRPO 组件</h4>
+<p>接下来实现计算 GRPO loss 各组成部分的函数。后文还会实现不同的变体，例如替换 advantage normalizer 或 importance reweighting 方法。下面给出的组件接口通过参数指定要使用的变体，从而尽量减少变体之间重复的代码。本节只需实现标准 GRPO 变体。</p>
+<p>第一步是实现一个计算 response reward 的 helper function。</p>
+<h4 class="problem-heading" id="sec-4-34">问题（<code>compute_rollout_rewards</code>）：计算 rollout reward（1 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 实现 <code>compute_rollout_rewards</code>，计算每条 rollout response 的 raw reward。建议使用以下接口：</p>
+<pre><code class="language-python">def compute_rollout_rewards(
+    reward_fn: Callable[[str, str], dict[str, float]],
+    rollout_responses: list[str],
+    repeated_ground_truths: list[str],
+) -&gt; tuple[torch.Tensor, dict[str, float]]:
+</code></pre>
+<p>该函数为 rollout response 列表计算 reward，并返回 reward 各组成部分的 metadata。</p>
+<p><strong>参数：</strong></p>
+<ul>
+<li><code>reward_fn: Callable[[str, str], dict[str, float]]</code>：对照 ground truth 为 rollout response 评分，返回包含 <code>&quot;reward&quot;</code>、<code>&quot;format_reward&quot;</code> 和 <code>&quot;answer_reward&quot;</code> 的字典。</li>
+<li><code>rollout_responses: list[str]</code>：policy 生成的 rollout。列表长度为 <code>rollout_batch_size = n_prompts_per_rollout_batch * group_size</code>。</li>
+<li><code>repeated_ground_truths: list[str]</code>：样例的 ground truth。由于每个样例的 ground truth 会重复 <code>group_size</code> 次，所以列表长度为 <code>rollout_batch_size</code>。</li>
+</ul>
+<p><strong>返回值：</strong> <code>tuple[torch.Tensor, dict[str, float]]</code>：</p>
+<ul>
+<li><code>raw_rewards</code>：形状为 <code>(rollout_batch_size,)</code>，表示每条 rollout response 的未归一化 reward。</li>
+<li><code>metadata</code>：用于记录日志的 reward 统计信息；至少包含 rollout batch 上 total reward 与 format reward 的均值。</li>
+</ul>
+<p>为了测试代码，请实现 <code>[adapters.run_compute_rollout_rewards]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k compute_rollout_rewards
+</code></pre>
+<p>确保实现通过测试。</p>
+<p class="problem-box-end">下一步实现 GRPO 的核心数学操作：对 reward 进行归一化，将其变为 advantage。上一个函数输出的 reward 已经展平，因此还需要接收 group size，把 reward 重新 reshape 成 group 后再做归一化。为了通过测试，需要支持 <code>baseline = &quot;mean&quot;</code> 和 <code>advantage_normalizer = &quot;std&quot;</code>。除以 per-group std 之前，还应加上 <code>advantage_eps</code>，避免除以零。</p>
+<h4 class="problem-heading" id="sec-4-35">问题（<code>compute_group_normalized_rewards_grpo</code>）：Group normalization（1 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 实现 <code>compute_group_normalized_rewards</code>：在各 group 内归一化 raw reward，返回归一化 reward 和你认为有用的 metadata。</p>
+<p>目前只需要支持 <code>baseline = &quot;mean&quot;</code> 与 <code>advantage_normalizer = &quot;std&quot;</code>；对不支持的输入可以抛出 <code>NotImplementedError</code>。后续章节将实现其他选项并执行 ablation。请记得向 normalizer 中加入 <code>advantage_eps</code>，避免除以零。建议使用以下接口：</p>
+<pre><code class="language-python">def compute_group_normalized_rewards(
+    raw_rewards: torch.Tensor,
+    group_size: int,
+    baseline: Literal[&quot;mean&quot;, &quot;none&quot;] = &quot;mean&quot;,
+    advantage_eps: float = 1e-6,
+    advantage_normalizer: Literal[&quot;std&quot;, &quot;none&quot;, &quot;mean&quot;] = &quot;std&quot;,
+):
+</code></pre>
+<p>该函数按要求在每个 group 内应用 baseline 和 normalization，计算 advantage。</p>
+<p><strong>参数：</strong></p>
+<ul>
+<li><code>raw_rewards: torch.Tensor</code>：形状为 <code>(rollout_batch_size,)</code>；每条 rollout response 的未归一化 reward，其中 <code>rollout_batch_size = n_prompts_per_rollout_batch * group_size</code>。</li>
+<li><code>group_size: int</code>：每个问题的 response 数量（group 大小）。</li>
+<li><code>baseline: Literal[&quot;mean&quot;, &quot;none&quot;]</code>：本题支持 <code>mean</code>，即减去 per-group mean reward。后文中 <code>none</code> 表示不减 baseline。</li>
+<li><code>advantage_eps: float</code>：归一化时避免除以零的小常数。</li>
+<li><code>advantage_normalizer: Literal[&quot;std&quot;, &quot;none&quot;, &quot;mean&quot;]</code>：本题支持 <code>std</code>，即除以 per-group standard deviation。后文中，<code>none</code> 表示不归一化，<code>mean</code> 表示除以 per-group mean reward。</li>
+</ul>
+<p><strong>返回值：</strong> <code>tuple[torch.Tensor, dict[str, float]]</code>：</p>
+<ul>
+<li><code>advantages</code>：形状为 <code>(rollout_batch_size,)</code>；每条 rollout response 的 group-normalized reward。</li>
+<li><code>metadata</code>：你选择记录的其他统计信息，例如 reward 的 mean、std、max／min。</li>
+</ul>
+<p>为了测试代码，请实现 <code>[adapters.run_compute_group_normalized_rewards]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k compute_group_normalized_rewards_grpo
+</code></pre>
+<p>确保实现通过测试。</p>
+<p class="problem-box-end">下一步实现计算 per-token policy gradient loss 的函数。注意：算法 1 给出的是 gradient estimator，而本题要求编写一个 per-token loss，使得对它求 gradient 后能得到 GRPO gradient estimator 中的各项；随后再把 per-token loss 聚合到所有 token 上。这里的表达式不是传统意义上期望在训练过程中持续下降的 loss，它只是一个求 gradient 后会得到 policy gradient 的表达式。</p>
+<p>需要实现的具体目标为：</p>
+<div class="math-display">$
+J_\theta^{\text{GRPO-on-policy}}
+=\frac{1}{BG}\sum_{i=1}^B\sum_{j=1}^G
+\frac{1}{\operatorname{len}(y^{(i,j)})}
+\sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\frac{r(y^{(i,j)}\mid x^{(i)})-\mu_i}{\operatorname{std}_i}
+\log\pi_\theta\left(y_t^{(i,j)}\mid x^{(i)},y_{&lt;t}^{(i,j)}\right). \tag{32}
+$</div>
+
+<p>对该式求导会产生算法 1 中的 gradient 项。由于 PyTorch optimizer 执行 gradient descent，你的实现应返回这个目标的负值作为 loss。<code>compute_policy_gradient_loss</code> 负责计算每个 token、每条 sequence 上的 loss 项；<code>aggregate_loss_across_microbatch_sequence</code> 则在 token 与 sequence 两个维度上对 per-token loss 求平均。</p>
+<h4 class="problem-heading" id="sec-4-36">问题（<code>compute_policy_gradient_loss_on_policy</code>）：On-policy policy gradient（1 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 实现 <code>compute_policy_gradient_loss</code>，根据 raw reward 或预先算好的 advantage 计算 per-token policy-gradient loss。</p>
+<p>目前假设所有 rollout 都是 on-policy，因此只需支持 <code>importance_reweighting_method = &quot;none&quot;</code>，可以忽略 old-log-prob 和 clipping 参数；对其他输入可以抛出 <code>NotImplementedError</code>。作业后文会实现 clipping。建议使用以下接口：</p>
+<pre><code class="language-python">def compute_policy_gradient_loss(
+    raw_rewards_or_advantages: torch.Tensor,
+    policy_log_probs: torch.Tensor,
+    importance_reweighting_method: Literal[&quot;none&quot;, &quot;noclip&quot;, &quot;grpo&quot;, &quot;gspo&quot;] = &quot;none&quot;,
+    old_log_probs: torch.Tensor | None = None,
+    cliprange: float | None = None,
+    response_mask: torch.Tensor | None = None,
+) -&gt; tuple[torch.Tensor, dict[str, torch.Tensor]]:
+</code></pre>
+<p>该函数计算每个 token 上的 policy-gradient loss；<code>raw_rewards_or_advantages</code> 可以是 raw reward，也可以是已经归一化的 advantage。</p>
+<p><strong>参数：</strong></p>
+<ul>
+<li><code>raw_rewards_or_advantages</code>：形状为 <code>(batch_size,)</code> 或 <code>(batch_size, 1)</code>；每条 rollout response 对应的标量 reward／advantage。</li>
+<li><code>policy_log_probs</code>：形状为 <code>(batch_size, sequence_length)</code>；每个 token 的 log-prob。</li>
+<li><code>importance_reweighting_method</code>：<code>&quot;none&quot;</code> 表示不做 importance reweighting；<code>&quot;noclip&quot;</code> 表示做 importance reweighting 但不 clipping；<code>&quot;grpo&quot;</code> 表示采用 PPO／GRPO 风格的 token-level reweighting 与 clipping；<code>&quot;gspo&quot;</code> 表示采用 GSPO 风格的 sequence-level reweighting 与 clipping。</li>
+<li><code>old_log_probs</code>：除 <code>importance_reweighting_method = &quot;none&quot;</code> 外均为必需；形状为 <code>(batch_size, sequence_length)</code>。</li>
+<li><code>cliprange</code>：clipping 参数 $\varepsilon$；当方法为 <code>&quot;grpo&quot;</code> 或 <code>&quot;gspo&quot;</code> 时为必需。</li>
+<li><code>response_mask</code>：可选，形状为 <code>(batch_size, sequence_length)</code>，覆盖 response token。GSPO 实现需要它，以便只在 response token 上平均 sequence-level log-ratio。</li>
+</ul>
+<p><strong>返回值：</strong> <code>tuple[torch.Tensor, dict[str, torch.Tensor]]</code>：</p>
+<ul>
+<li><code>per_token_policy_gradient_loss</code>：形状为 <code>(batch_size, sequence_length)</code>；训练循环会在 batch 与 sequence 两个维度上聚合的 per-token policy-gradient loss。</li>
+<li><code>metadata</code>：底层 loss 调用产生的统计量，例如 clip fraction 的各组成部分。</li>
+</ul>
+<p>为了测试代码，请实现 <code>[adapters.run_compute_policy_gradient_loss]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k test_compute_policy_gradient_loss_on_policy
+</code></pre>
+<p>确保实现通过测试。</p>
+<p class="problem-box-end">最后实现 token 与 sequence 维度上的聚合函数。标准 GRPO 先在每条 sequence 内对 token 求平均，再对 sequence 求平均。后文还会实现另一种方法：直接除以某个常数；根据前面的推导，后一种做法更忠实于我们最初想估计的 policy gradient。</p>
+<h4 class="problem-heading" id="sec-4-37">问题（<code>aggregate_loss_across_microbatch_sequence</code>）：聚合 token 与 sequence 上的 loss（0.5 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 实现 <code>aggregate_loss_across_microbatch</code>：接收 per-token policy-gradient loss 与 response mask，输出平均 loss。目前使用标准 GRPO aggregation，即先在每条 sequence 内求平均，再对 sequence 求平均，因此可以假设 <code>loss_normalization = &quot;sequence&quot;</code>；对不支持的输入可以抛出 <code>NotImplementedError</code>。建议使用以下接口：</p>
+<pre><code class="language-python">def aggregate_loss_across_microbatch(
+    per_token_policy_gradient_loss: torch.Tensor,
+    mask: torch.Tensor,
+    loss_normalization: Literal[&quot;sequence&quot;, &quot;constant&quot;] = &quot;sequence&quot;,
+    normalization_constant: int | None = None,
+) -&gt; torch.Tensor:
+</code></pre>
+<p><strong>参数：</strong></p>
+<ul>
+<li><code>per_token_policy_gradient_loss</code>：形状为 <code>(batch_size, sequence_length)</code>；需要在 batch 和 sequence 维度上聚合的 per-token policy-gradient loss。</li>
+<li><code>mask</code>：形状为 <code>(batch_size, sequence_length)</code>；标记哪些位置应计入 loss。</li>
+<li><code>loss_normalization</code>：<code>&quot;sequence&quot;</code> 表示先对每条 sequence 的 loss 求平均，再对 sequence 求平均；<code>&quot;constant&quot;</code> 表示用一个常数归一化 total loss。</li>
+<li><code>normalization_constant</code>：total loss 要除以的常数；当 <code>loss_normalization = &quot;constant&quot;</code> 时为必需。</li>
+</ul>
+<p><strong>返回值：</strong> 标量 <code>loss: torch.Tensor</code>，其中包含平均 loss；确保之后可以在它上面调用 <code>backward()</code>。</p>
+<p>为了测试代码，请实现 <code>[adapters.run_aggregate_loss_across_microbatch]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k test_aggregate_loss_across_microbatch_sequence
+</code></pre>
+<p>确保测试通过。</p>
+<h4 id="sec-4-38">4.2.4 GRPO training step</h4>
+<p>现在可以把上述组件拼成一个完整的 training step。</p>
+<h5 id="sec-5-39">Gradient accumulation</h5>
+<p>为了在 inference 期间获得较高硬件利用率，需要使用较大的 batch size。在 on-policy RL 中，train batch size 与 inference batch size 相同，因此 GPU 显存不足以一次性在整个 batch 上计算 gradient。我们需要把 batch 划分成一系列 microbatch，并在这些 microbatch 之间累积 gradient。最容易出错的地方是正确处理 normalization，确保 microbatch accumulation 得到的 gradient 与一次性在完整 batch 上计算的 gradient 等价。</p>
+<p>在 PyTorch 中实现 gradient accumulation 很直接。回顾一下，每个权重 tensor 都有一个存放 gradient 的 <code>.grad</code> 属性。调用 <code>loss.backward()</code> 之前，<code>.grad</code> 为 <code>None</code>；调用之后，它就包含相应 gradient。通常我们接着执行 optimizer step，再调用 <code>optimizer.zero_grad()</code> 把各权重 tensor 的 <code>.grad</code> 清零：</p>
+<pre><code class="language-python"># Forward pass.
+logits = model(inputs)
+loss = loss_fn(logits, labels)
+
+# Backward pass.
+loss.backward()
+
+# Update weights.
+optimizer.step()
+# Zero gradients in preparation for next iteration.
+optimizer.zero_grad()
+</code></pre>
+<p>实现 gradient accumulation 时，把 batch 分成 $k$ 个 microbatch，但只调用一次 <code>optimizer.step()</code> 与 <code>optimizer.zero_grad()</code>。在 sequence normalization 设置下，我们先对每条 sequence 的 loss 求平均，再对 sequence 求平均；因此，算出每个 microbatch 的平均 loss 后，还需要按 sequence 数量重新加权：</p>
+<pre><code class="language-python">gradient_accumulation_steps = 4
+microbatch_size = len(inputs) // gradient_accumulation_steps
+for i in range(0, len(inputs), microbatch_size):
+    inputs_microbatch = inputs[i:i + microbatch_size]
+    labels_microbatch = labels[i:i + microbatch_size]
+
+    # Forward pass.
+    logits = model(inputs_microbatch)
+    loss = loss_fn(logits, labels_microbatch) * (
+        len(inputs_microbatch) / len(inputs)
+    )
+
+    # Backward pass.
+    loss.backward()
+
+# Update weights once across entire batch.
+optimizer.step()
+# Zero gradients once across entire batch.
+optimizer.zero_grad()
+</code></pre>
+<p>后文改用 constant normalization 而非 sequence normalization 时，microbatch 代码也要略作修改，以适配不同的 normalization。</p>
+<h5 id="sec-5-40">实现 train step</h5>
+<p>下面的函数最终会根据一批 rollout 实现一个 GRPO training step。它接收模型、tokenizer、optimizer、reward function、prompt、rollout 和各种超参数，累积 gradient 后执行一次 optimizer step。你需要按上文所述实现 gradient accumulation，以免耗尽显存。执行 optimizer step 之前，还应把 gradient norm clipping 到 <code>max_grad_norm</code>。函数随后返回该 batch 上的 training loss 和 metadata，供日志记录使用。</p>
+<p>Train step 至少应记录以下指标：</p>
+<ul>
+<li>loss；</li>
+<li>gradient norm；</li>
+<li>token entropy；</li>
+<li>train reward（total、format）。</li>
+</ul>
+<p>你也可以记录其他指标。例如，记录 $1$ 到 <code>group_size</code> 之间各个 $k$ 对应的 pass@$k$ 可能很有帮助；它表示前 $k$ 条 rollout 中至少有一个正确答案的 prompt 比例。</p>
+<h4 class="problem-heading" id="sec-4-41">问题（<code>grpo_train_step_standard_on_policy</code>）：GRPO train step（5 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 给定模型、tokenizer 与 rollout，实现一次 policy gradient batch update。本节只需支持标准 GRPO 的 on-policy 设置：<code>baseline = &quot;mean&quot;</code>、<code>advantage_normalizer = &quot;std&quot;</code>、<code>importance_reweighting_method = &quot;none&quot;</code>、<code>loss_normalization = &quot;sequence&quot;</code>。对不支持的输入可以抛出 <code>NotImplementedError</code>。</p>
+<p>建议使用以下接口：</p>
+<pre><code class="language-python">def grpo_train_step(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizer,
+    optimizer: Optimizer,
+    gradient_accumulation_steps: int,
+    max_grad_norm: float | None,
+    reward_fn: Callable[[str, str], dict[str, float]],
+    repeated_prompts: list[str],
+    rollout_responses: list[str],
+    repeated_ground_truths: list[str],
+    group_size: int,
+    # Reward normalization
+    baseline: Literal[&quot;mean&quot;, &quot;none&quot;] = &quot;mean&quot;,
+    advantage_eps: float = 1e-6,
+    advantage_normalizer: Literal[&quot;std&quot;, &quot;none&quot;, &quot;mean&quot;] = &quot;std&quot;,
+    # Importance reweighting and clipping
+    importance_reweighting_method: Literal[&quot;none&quot;, &quot;noclip&quot;, &quot;grpo&quot;, &quot;gspo&quot;] = &quot;none&quot;,
+    old_log_probs: torch.Tensor | None = None,
+    cliprange: float | None = None,
+    # Loss normalization
+    loss_normalization: Literal[&quot;sequence&quot;, &quot;constant&quot;] = &quot;sequence&quot;,
+    normalization_constant: int | None = None,
+) -&gt; tuple[torch.Tensor, dict[str, torch.Tensor | float]]:
+</code></pre>
+<p>该函数使用 <code>gradient_accumulation_steps</code> 个 microbatch 执行 forward 与 backward pass。</p>
+<p><strong>参数：</strong></p>
+<ul>
+<li><code>model: PreTrainedModel</code>：要训练的 Hugging Face 模型。</li>
+<li><code>tokenizer: PreTrainedTokenizer</code>：执行 tokenization 使用的 tokenizer。</li>
+<li><code>optimizer: Optimizer</code>：模型使用的 optimizer。</li>
+<li><code>gradient_accumulation_steps: int</code>：每次 optimizer step 对应的 microbatch 数量。</li>
+<li><code>max_grad_norm: float | None</code>：非 <code>None</code> 时，在调用 <code>optimizer.step()</code> 前把 gradient norm clipping 到该值。</li>
+<li><code>reward_fn</code>：对照 ground truth 为 rollout response 评分，返回包含 <code>&quot;reward&quot;</code>、<code>&quot;format_reward&quot;</code> 和 <code>&quot;answer_reward&quot;</code> 的字典。</li>
+<li><code>repeated_prompts: list[str]</code>：样例 prompt。列表长度为 <code>rollout_batch_size</code>，因为每个样例的 prompt 会重复 <code>group_size</code> 次。</li>
+<li><code>rollout_responses: list[str]</code>：policy 生成的 rollout。列表长度为 <code>rollout_batch_size = n_prompts_per_rollout_batch * group_size</code>。</li>
+<li><code>repeated_ground_truths: list[str]</code>：样例 ground truth。列表长度为 <code>rollout_batch_size</code>，因为每个样例的 ground truth 会重复 <code>group_size</code> 次。</li>
+<li><code>group_size: int</code>：每个问题的 response 数量（group 大小）。</li>
+<li><code>baseline</code>：<code>mean</code> 表示减去 per-group mean reward；<code>none</code> 表示不做处理。</li>
+<li><code>advantage_eps: float</code>：归一化时避免除以零的小常数。</li>
+<li><code>advantage_normalizer</code>：<code>std</code> 表示除以 per-group standard deviation；<code>none</code> 表示不处理；<code>mean</code> 表示除以 per-group mean reward。</li>
+<li><code>importance_reweighting_method</code>：<code>none</code> 表示不做 importance reweighting；<code>noclip</code> 表示 reweighting 但不 clipping；<code>grpo</code> 表示 PPO／GRPO 风格的 token-level reweighting 与 clipping；<code>gspo</code> 表示 GSPO 风格的 sequence-level reweighting 与 clipping。</li>
+<li><code>old_log_probs</code>：除 <code>importance_reweighting_method = &quot;none&quot;</code> 外均为必需；形状为 <code>(batch_size, sequence_length)</code>。</li>
+<li><code>cliprange</code>：clipping 参数 $\varepsilon$；方法为 <code>&quot;grpo&quot;</code> 或 <code>&quot;gspo&quot;</code> 时为必需。</li>
+<li><code>loss_normalization</code>：<code>sequence</code> 表示先在每条 sequence 上平均 loss，再在 sequence 间平均；<code>constant</code> 表示用训练期间固定不变的常数归一化 total loss。</li>
+<li><code>normalization_constant</code>：total loss 要除以的常数；当 <code>loss_normalization = &quot;constant&quot;</code> 时为必需。</li>
+</ul>
+<p><strong>返回值：</strong> <code>tuple[torch.Tensor, dict[str, torch.Tensor]]</code>：</p>
+<ul>
+<li><code>loss</code>：经过 gradient accumulation 调整的 scalar batch loss；返回它以便记录日志。</li>
+<li><code>metadata</code>：包含底层 loss 调用返回的 metadata、clipping 前的 gradient norm，以及其他需要记录的统计信息。</li>
+</ul>
+<p>为了测试代码，请实现 <code>[adapters.run_grpo_train_step]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k test_grpo_train_step_standard_on_policy
+</code></pre>
+<p>确认测试通过。</p>
+<h3 id="sec-3-42">4.3 实验</h3>
+<p>现在可以构建完整的 GRPO training loop。它应完成以下工作：</p>
+<ul>
+<li>加载模型和数据集；</li>
+<li>初始化日志系统（如 Weights &amp; Biases）、vLLM server 和 optimizer；</li>
+<li>执行 RL training loop。</li>
+</ul>
+<p>下面给出一组建议超参数。如果 training script 正确，那么使用这些超参数训练时，对大多数 random seed 都应看到 validation reward 随训练逐渐提高。</p>
+<pre><code class="language-python">n_train_examples = 6400
+n_val_examples = 1024
+num_rollout_steps = 200
+learning_rate = 1e-5
+rollout_batch_size = train_batch_size = 256
+group_size = 8
+gradient_accumulation_steps = 32
+sampling_temperature = 1.0
+sampling_max_tokens = 512
+max_grad_norm = 1.0
+optimizer = torch.optim.AdamW(
+    policy.parameters(), lr=learning_rate, betas=(0.9, 0.95), weight_decay=0.0
+)
+</code></pre>
+<p>注意，<code>rollout_batch_size</code> 与 <code>train_batch_size</code> 统计的是 response 数量，而不是 prompt 数量。因此，<code>rollout_batch_size = train_batch_size = 256</code> 表示共有 32 个 prompt，每个 prompt 对应 8 条 rollout。</p>
+<p>一个合理的默认设置，是每 10 个 rollout batch 在 validation set 上评估一次。应至少评估 1024 个 validation example，因为 CoT／RL evaluation 的噪声可能很大。除了记录上一小节列出的指标外，还应记录 rollout，以便定性了解模型行为。一个合理默认值是每 40 个 rollout batch，记录当前 batch 的 training rollout。Training example 可以使用 <code>data/gsm8k/train.json</code>，validation example 可以使用 <code>data/gsm8k/test.json</code>。</p>
+<p>由于 policy gradient estimator 可能具有很高的 variance，并且 RL 具有自我强化性质，不同 RL training run 的轨迹通常差异很大。因此，在确认脚本正确后，需要使用 4 个 random seed 运行 RL 循环。即使脚本在给定 seed 时无法完全复现也没有关系；你也可以直接把同一实验运行 4 次。绘图时，请以某种方式体现各次运行之间的 variance，而不要只画均值。合理的做法包括：</p>
+<ul>
+<li>绘制 4 次运行的均值，同时直接画出各次实际运行。为了便于阅读，可以把实际运行放在单独的图中，或使用较低透明度、较细线条或虚线。</li>
+<li>绘制均值及阴影 confidence interval。具体而言，在每个 step 计算 sample mean 和 sample standard deviation；一个合理的区间是 $\mu\pm1.96\times\frac{\sigma}{\sqrt n}$，其中 $n$ 为 seed 数量。</li>
+<li>绘制均值，以及每个 step 上的 min 和 max。</li>
+</ul>
+<h4 class="problem-heading" id="sec-4-43">问题（<code>grpo_experiments_standard_on_policy</code>）：使用 GRPO 提升 OLMo-2-0425-1B 在 GSM8K 上的表现（2 B200 小时）（10 分）</h4>
+<p>(a) 编写一个运行 GRPO training loop 的脚本。它接收 model name、prompt、training set 文件路径、validation set 文件路径、sampling 超参数和 training 超参数。从高层来看，脚本先初始化 vLLM server、Wandb 日志、数据集、模型和 optimizer；随后 training loop 重复执行：把权重同步到 vLLM server、生成 training rollout、在 training batch 上执行 policy gradient update，并定期检查 validation set 上的表现（同时记录 generation）。</p>
+<p class="deliverable"><strong>提交内容：</strong> 一个脚本，在 GSM8K 任务和 OLMo-2-0425-1B 模型上运行标准 on-policy GRPO。</p>
+<p>(b) 运行脚本约 50 个 step，确认 validation reward 有所提高，同时 rollout 随训练呈现合理变化。Reward 一开始接近 0 属于正常现象；随 random seed 不同，可能需要数个 step 才会首次采样到 non-zero reward 的 rollout，随后模型才开始改进。</p>
+<p class="deliverable"><strong>提交内容：</strong> 使你确信脚本正确的证据，例如 validation reward 逐步提高、rollout 内容合理。</p>
+<p>(c) 确信脚本正确后，使用上文给出的超参数和 4 个 random seed，在 GSM8K 上训练 OLMo-2-0425-1B。使用 zero-shot <code>r1_zero</code> prompt。如果代码正确，应看到 validation reward 随模型训练逐渐提高。</p>
+<p>记录以下指标并绘制其随时间的变化，同时说明不同运行之间的 variance（例如绘制各运行的 mean／std 或 min／max）：</p>
+<ul>
+<li>loss；</li>
+<li>gradient norm；</li>
+<li>token entropy；</li>
+<li>train reward（total、format）；</li>
+<li>validation reward（total、format）；</li>
+<li>validation average response length；</li>
+<li>其他有助于调试的指标。</li>
+</ul>
+<p>还应定期记录并观察 rollout。训练是否改善了 response？</p>
+<p class="deliverable"><strong>提交内容：</strong> 几句分析以及每项指标对应的一张图，说明它随训练如何变化，以及不同运行之间有多大 variance。</p>
+<p class="deliverable"><strong>提交内容：</strong> 训练前后各给出若干模型 rollout 示例。</p>
+<p class="deliverable"><strong>提交内容：</strong> 一套在 random seed 间取平均后，最终 validation accuracy 至少达到 25% 的流程。</p>
+<p class="problem-box-end">有了可用脚本后，可以开始调节超参数并执行 ablation。首先调节 learning rate；它通常是对训练影响最大的超参数。</p>
+<h4 class="problem-heading" id="sec-4-44">问题（<code>grpo_learning_rate</code>）：调节 learning rate（4 B200 小时）（3 分）</h4>
+<p>从建议超参数出发，对多个 learning rate 执行 sweep；至少选择一个小于建议默认值、一个大于建议默认值的 learning rate。报告最终 validation reward；如果 optimizer 发散，则注明发散。应根据上一部分观察到的 variance，自行决定每个 training run 使用多少个 random seed。在作业余下部分中，如果愿意，可以用调节后的 learning rate 替代建议默认值。</p>
+<p class="deliverable"><strong>提交内容：</strong> 一张最终 validation reward 关于 learning rate 的图，并附几句分析。</p>
+<p class="problem-box-end">影响 RL 动态的另一个选择是 prompt：RL 会提高模型 rollout 的权重，因此 prompt 会影响模型在训练期间探索哪些 rollout。下面研究 prompt 选择的影响。</p>
+<h4 class="problem-heading" id="sec-4-45">问题（<code>grpo_prompt_ablation</code>）：Prompt ablation（4 B200 小时）（3 分）</h4>
+<p>分别使用 <code>question_only</code> prompt 与 <code>r1_zero_three_shot</code> prompt，并采用若干 random seed 运行 GRPO 脚本。与上面的 zero-shot <code>r1_zero</code> prompt 结果相比，它们表现如何？哪种 prompt 的 average reward 最高、variance 最低？日志中的其他指标是否存在系统性差异？考虑各次运行之间的 variance，你对结论有多大把握？</p>
+<p class="deliverable"><strong>提交内容：</strong> 分析结论，并用所引用指标的图表支持结论。</p>
+<h2 id="sec-2-46">5 RL 算法变体</h2>
+<p>GRPO 是语言模型 RL 的热门选择，但多篇论文对其算法设计提出了争议。本节将学习这些选择背后的部分理论论证，并进行 controlled experiment，亲自判断哪些算法更好——至少在本作业的模型—数据集组合上如此。本节讨论 on-policy 设置，下一节讨论 off-policy 算法。</p>
+<h3 id="sec-3-47">5.1 Dr. GRPO</h3>
+<p>推导 GRPO 时，你可能已经注意到：一系列设计选择使 GRPO policy gradient estimator 不再具有“正确”期望 $\nabla_\theta J_\theta$，其中 $J_\theta$ 是模型的 expected reward。这两项选择分别是 standard-deviation advantage normalization 与 sequence-length normalization。Dr. GRPO 论文 [Z. Liu et al., 2025] 提出的第一项 ablation，就是撤销这两项选择：移除 std normalization，并用常数除 total loss，而不是先按每条 sequence 的长度归一化。把这个 constant normalizer 记为 $Z$，Dr. GRPO gradient estimator 为：</p>
+<div class="math-display">$
+\hat g\leftarrow\frac1Z\sum_{i=1}^B\sum_{j=1}^G
+\sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\left(r(y^{(i,j)}\mid x^{(i)})-\mu_i\right)
+\nabla_\theta\log\pi_\theta\left(y_t^{(i,j)}\mid x^{(i)},y_{&lt;t}^{(i,j)}\right). \tag{33}
+$</div>
+
+<p>$Z$ 通常设为 training batch size 与最大 generation length 的乘积，即 $Z=BGL$；其中 $L$ 是最大 generation length，本作业中为 512。</p>
+<h4 class="problem-heading" id="sec-4-48">问题（<code>think_about_length_normalization</code>）：思考 length normalization（1 分）</h4>
+<p>在运行任何实验之前，思考按各自 sequence length 归一化每条 sequence，与用同一个常数归一化所有 sequence 之间有何差异。两种方法分别有什么优点和缺点？是否存在某些特定设置或示例，使其中一种方法明显更好？</p>
+<p class="deliverable"><strong>提交内容：</strong> 几句讨论。</p>
+<h4 class="problem-heading" id="sec-4-49">问题（<code>compute_group_normalized_rewards_drgrpo</code>）：Dr. GRPO group normalization（0.5 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 更新 <code>compute_group_normalized_rewards</code>，支持 <code>advantage_normalizer = &quot;none&quot;</code>。Dr. GRPO 使用 <code>baseline = &quot;mean&quot;</code>，但本题还要求支持 <code>baseline = &quot;none&quot;</code>。</p>
+<p>为了测试代码，请实现 <code>[adapters.run_compute_group_normalized_rewards]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k compute_group_normalized_rewards_drgrpo
+</code></pre>
+<p>确保实现通过测试。</p>
+<h4 class="problem-heading" id="sec-4-50">问题（<code>aggregate_loss_across_microbatch_constant</code>）：Dr. GRPO loss aggregation（0.5 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 更新 <code>aggregate_loss_across_microbatch</code>，支持 <code>loss_normalization = &quot;constant&quot;</code>。</p>
+<p>为了测试代码，请实现 <code>[adapters.run_aggregate_loss_across_microbatch]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k test_aggregate_loss_across_microbatch_constant
+</code></pre>
+<p>确保测试通过。</p>
+<h3 id="sec-3-51">5.2 Rejection fine-tuning</h3>
+<p>下一项 ablation 是一种简单得多的算法，通常称为“rejection fine-tuning”（RFT）或“expert iteration”（EI）。顾名思义，该算法先采样大量 rollout，只保留其中正确的 rollout，然后在这些正确 rollout 上执行 supervised fine-tuning，也就是最小化 next-word prediction log loss。具体而言，RFT gradient 为：</p>
+<div class="math-display">$
+\hat g\leftarrow\nabla_\theta\left[
+\frac1Z\sum_{i=1}^B\sum_{j=1}^G
+\mathbb 1\{r(y^{(i,j)}\mid x^{(i)})=1\}
+\sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\log\pi_\theta\left(y_t^{(i,j)}\mid x^{(i)},y_{&lt;t}^{(i,j)}\right)
+\right], \tag{34}
+$</div>
+
+<p>其中，$Z$ 与 Dr. GRPO 中一样是 constant normalizer；indicator function $\mathbb 1\{r(y^{(i,j)}\mid x^{(i)})=1\}$ 只保留正确 response。下面的问题会思考：RFT gradient 是否真的是 policy gradient，也就是它是否真的优化 expected reward $J_\theta$；同时还会比较它与 GRPO 的关系。与此前相同，把它实现成 PyTorch loss 时应返回目标的负值，使最小化 loss 等价于对该估计器执行 gradient ascent。</p>
+<h4 class="problem-heading" id="sec-4-52">问题（<code>think_about_rft</code>）：思考 RFT（2 分）</h4>
+<p>回顾使用 constant normalization 的 RFT objective：</p>
+<div class="math-display">$
+J_\theta=\frac1Z\sum_x\sum_{j=1}^G
+\mathbb 1\{r(y^{(j)}\mid x)=1\}
+\log\pi_\theta(y^{(j)}\mid x), \tag{35}
+$</div>
+
+<p>其中 $x$ 是 prompt；每个 $y^{(j)}$ 表示独立同分布地从 policy 中采样的 response，$y^{(j)}\overset{\mathrm{iid}}{\sim}\pi_\theta(\cdot\mid x)$；$G$ 是从 policy 中采样的 generation 数量；$Z$ 是 constant normalizer；$r$ 是 reward function。RFT gradient 为 $\nabla_\theta J_\theta$。</p>
+<p>相比之下，on-policy Dr. GRPO policy gradient estimator（即使用 constant normalization、但不做 std normalization 的 GRPO）为：</p>
+<div class="math-display">$
+\frac1Z\sum_x\sum_{j=1}^G
+\left(r(y^{(j)}\mid x)-\mu\right)
+\nabla_\theta\log\pi_\theta(y^{(j)}\mid x), \tag{36}
+$</div>
+
+<p>其中 $\mu$ 表示 group mean：$\mu=\frac1G\sum_{j=1}^G r(y^{(j)}\mid x)$。假设 reward function $r$ 是二值函数，请比较这两个 objective：它们是否具有相同期望？你预计哪一个 variance 更低？从直觉上看，是否存在更适合其中一种方法的情形？</p>
+<p class="deliverable"><strong>提交内容：</strong> 几句讨论。</p>
+<h3 id="sec-3-53">5.3 MaxRL</h3>
+<p>最后研究近期提出的 Maximum Likelihood Reinforcement Learning，也称 MaxRL [F. Tajwar et al., 2026]。GRPO 用 group std 归一化 advantage，Dr. GRPO 不做 advantage normalization，而 MaxRL 提议除以 group mean。由此得到 gradient estimator：</p>
+<div class="math-display">$
+\hat g\leftarrow\frac1Z\sum_{i=1}^B\sum_{j=1}^G
+\sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\frac{r(y^{(i,j)}\mid x^{(i)})-\mu_i}{\mu_i}
+\nabla_\theta\log\pi_\theta\left(y_t^{(i,j)}\mid x^{(i)},y_{&lt;t}^{(i,j)}\right). \tag{37}
+$</div>
+
+<p>原始 MaxRL 论文不使用 constant normalizer $Z$，而是除以 batch 中 token 总数 $\sum_{i=1}^B\sum_{j=1}^G\operatorname{len}(y^{(i,j)})$；这个数依赖 batch，而不是固定常数。本作业改用 constant normalizer，从而减少相对其他 baseline 发生变化的因素，更容易单独判断用 $\mu_i$ 而非 $\operatorname{std}_i$ 归一化的影响。</p>
+<p>下面通过一些基础数学，探索不同 advantage normalizer 的影响。直观而言，除以 average reward $\mu_i$ 会在平均意义上提高较难 prompt 的权重，因为较难 prompt 的 $\mu_i$ 通常低于简单 prompt。为了形式化这一点，定义 expected reward 的 reweighted 版本：</p>
+<div class="math-display">$
+J_{\theta,w}=\mathbb E_{x\sim\rho}\left[
+w(x,\operatorname{stopgrad}(\pi_\theta))
+\mathbb E_{y\sim\pi_\theta}r(y\mid x)
+\right], \tag{38}
+$</div>
+
+<p>其中，$w(x,\operatorname{stopgrad}(\pi_\theta))$ 对 prompt $x$ 重新加权；例如，它可以根据当前 policy 在 $x$ 上的 expected reward 所表示的题目难度 $\eta(x)=\mathbb E_{y\sim\pi_\theta}r(y\mid x)$ 来加权。<code>stopgrad</code> 表示不通过 reweighting function 反向传播 gradient。下面的问题将推导此前各类 advantage normalizer 对应的 difficulty reweighting。</p>
+<h4 class="problem-heading" id="sec-4-54">问题（<code>derive_difficulty_reweightings</code>）：推导不同 advantage normalizer 引入的 difficulty reweighting（6 分）</h4>
+<p>回顾一下，在所有 prompt 上聚合后，标准 policy gradient 为：</p>
+<div class="math-display">$
+\nabla_\theta J_\theta
+=\nabla_\theta\mathbb E_{x\sim\rho}
+\left[\mathbb E_{y\sim\pi_\theta}r(y\mid x)\right], \tag{39}
+$</div>
+
+<p>其中 $\rho$ 是 prompt $x$ 上的分布，$\pi_\theta$ 表示 policy，$r(y\mid x)$ 表示 $y$ 是否为 $x$ 的正确 response。本题将推导各 GRPO 变体所优化的 surrogate objective。这些 surrogate 具有如下形式：</p>
+<div class="math-display">$
+\nabla_\theta J_{\theta,w}
+=\nabla_\theta\mathbb E_{x\sim\rho}\left[
+w(x,\operatorname{stopgrad}(\pi_\theta))
+\mathbb E_{y\sim\pi_\theta}r(y\mid x)
+\right], \tag{40}
+$</div>
+
+<p>其中 $w$ 对 prompt 重新加权，且我们不通过 $w$ 求导。</p>
+<p>(a) Dr. GRPO policy gradient estimator 为：</p>
+<div class="math-display">$
+\mathbb E_{x\sim\rho}\left[
+\frac1Z\sum_{j=1}^G
+\left(r(y^{(j)}\mid x)-\mu\right)
+\nabla_\theta\log\pi_\theta(y^{(j)}\mid x)
+\right], \tag{41}
+$</div>
+
+<p>其中 $\mu$ 是 group mean：$\mu=\frac1G\sum_{j=1}^G r(y^{(j)}\mid x)$。令 constant normalizer $Z=G$，并取 group size $G\to\infty$；对于什么 reweighting function $w$，该估计器等价于优化 surrogate objective $J_{\theta,w}$？</p>
+<p class="deliverable"><strong>提交内容：</strong> 用部分题目参数表示的表达式，并附几句论证。</p>
+<p>(b) 在 constant normalization 下，GRPO estimator 与 Dr. GRPO 的区别是前者还除以 standard deviation：</p>
+<div class="math-display">$
+\mathbb E_{x\sim\rho}\left[
+\frac1Z\sum_{j=1}^G
+\frac{r(y^{(j)}\mid x)-\mu}{\operatorname{std}}
+\nabla_\theta\log\pi_\theta(y^{(j)}\mid x)
+\right], \tag{42}
+$</div>
+
+<p>其中 $\operatorname{std}$ 表示 group standard deviation。令 $Z=G$ 并取 $G\to\infty$；对于什么 reweighting function $w$，该估计器等价于优化 $J_{\theta,w}$？</p>
+<p class="deliverable"><strong>提交内容：</strong> 用部分题目参数表示的表达式，并附几句论证。</p>
+<p>(c) MaxRL 改为除以 group mean：</p>
+<div class="math-display">$
+\mathbb E_{x\sim\rho}\left[
+\frac1Z\sum_{j=1}^G
+\frac{r(y^{(j)}\mid x)-\mu}{\mu}
+\nabla_\theta\log\pi_\theta(y^{(j)}\mid x)
+\right]. \tag{43}
+$</div>
+
+<p>令 $Z=G$ 并取 $G\to\infty$；对于什么 reweighting function $w$，该估计器等价于优化 $J_{\theta,w}$？</p>
+<p class="deliverable"><strong>提交内容：</strong> 用部分题目参数表示的表达式，并附几句论证。</p>
+<h4 class="problem-heading" id="sec-4-55">问题（<code>think_about_advantage_normalization</code>）：思考 advantage normalization（2 分）</h4>
+<p>在运行任何实验之前，思考用 group std、group mean 归一化 group advantage，以及完全不做 advantage normalization 之间的差异。各自有什么优点和缺点？是否存在某些设置或示例，使其中一种方法明显更好？</p>
+<p class="deliverable"><strong>提交内容：</strong> 几句讨论。</p>
+<h4 class="problem-heading" id="sec-4-56">问题（<code>compute_group_normalized_rewards_maxrl</code>）：MaxRL group normalization（0.5 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 更新 <code>compute_group_normalized_rewards</code>，支持 <code>advantage_normalizer = &quot;mean&quot;</code>。与 <code>advantage_normalizer = &quot;std&quot;</code> 相同，应向 normalizer 中添加 <code>advantage_eps</code>，避免除以零。</p>
+<p>为了测试代码，请实现 <code>[adapters.run_compute_group_normalized_rewards]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k compute_group_normalized_rewards_maxrl
+</code></pre>
+<p>确保实现通过测试。</p>
+<h3 id="sec-3-57">5.4 实验</h3>
+<p>现在可以运行实验，探索这些不同的 policy gradient estimator。首先更新 <code>grpo_train_step</code>，支持上面已经实现各组件的这些变体。具体设置如下：</p>
+<ul>
+<li><strong>GRPO constant：</strong> <code>baseline = &quot;mean&quot;</code>，<code>advantage_normalizer = &quot;std&quot;</code>，<code>loss_normalization = &quot;constant&quot;</code>。</li>
+<li><strong>Dr_GRPO：</strong> <code>baseline = &quot;mean&quot;</code>，<code>advantage_normalizer = &quot;none&quot;</code>，<code>loss_normalization = &quot;constant&quot;</code>。</li>
+<li><strong>RFT：</strong> <code>baseline = &quot;none&quot;</code>，<code>advantage_normalizer = &quot;none&quot;</code>，<code>loss_normalization = &quot;constant&quot;</code>。</li>
+<li><strong>MaxRL（使用 constant normalization）：</strong> <code>baseline = &quot;mean&quot;</code>，<code>advantage_normalizer = &quot;mean&quot;</code>，<code>loss_normalization = &quot;constant&quot;</code>。</li>
+</ul>
+<p>为了加快训练，请注意：一旦算出每条 sequence 的 normalized advantage，advantage 为 0 的 sequence 就不需要送入模型，因为它们对 gradient 的贡献为 0。Reward 为二值变量时，sequence 在两种情况下具有 zero advantage：</p>
+<ul>
+<li>若 <code>baseline = &quot;mean&quot;</code>，当一个 group 中所有 sequence 的 reward 相同时，它们的 advantage 都为 0。</li>
+<li>若 <code>baseline = &quot;none&quot;</code>，所有 zero reward sequence 的 advantage 均为 0。</li>
+</ul>
+<p>剪除 zero-advantage sequence 后，还可以按相同比例减少 <code>gradient_accumulation_steps</code>，也就是保持 <code>microbatch_size</code> 不变。例如，若一半 sequence 的 advantage 为 0，就可以把 grad accumulation step 从 $k$ 减少为 $k/2$。这个优化对 RFT 尤其有用，因为 RFT 会产生很多 zero-reward sequence。但必须仔细检查数学与实现，确保剪除版本与未剪除版本计算相同的 gradient。</p>
+<h4 class="problem-heading" id="sec-4-58">问题（<code>grpo_train_step_variants_on_policy</code>）：GRPO on-policy train step 变体（2.5 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 更新 <code>grpo_train_step</code>，支持所有 on-policy 变体，同时仍令 <code>importance_reweighting_method = &quot;none&quot;</code>。这些选项包括：</p>
+<ul>
+<li><code>baseline: Literal[&quot;mean&quot;, &quot;none&quot;]</code>；</li>
+<li><code>advantage_normalizer: Literal[&quot;std&quot;, &quot;none&quot;, &quot;mean&quot;]</code>；</li>
+<li><code>loss_normalization: Literal[&quot;sequence&quot;, &quot;constant&quot;]</code>。</li>
+</ul>
+<p>为了加快训练，函数还应避免把 zero-advantage sequence 送入模型。</p>
+<p>注意：当 <code>baseline = &quot;none&quot;</code> 时，错误样本的 reward 为 0，因此在 loss 中的权重也是 0，没有必要把它们送入待训练模型。可以利用这一点修改实现并加快训练。</p>
+<p>为了测试代码，请实现 <code>[adapters.run_grpo_train_step]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k test_grpo_train_step_variants_on_policy
+</code></pre>
+<p>确认测试通过。</p>
+<p class="problem-box-end">Training step 实现后，就可以运行实验、观察各方法表现，并判断它们是否优于标准 GRPO。为了使结果可比，应使用与此前实验相同的超参数。</p>
+<p><strong>关于超参数调节。</strong> 如果目标是判断一种方法是否优于另一种方法，实验上最可靠的做法，是为每种方法分别调节超参数。但 hyperparameter tuning 成本很高，而本作业没有足够算力。另一种成本较低的方案，是为 baseline 调节超参数，再把相同超参数用于新方法；例如，本作业在标准 GRPO 上调节 learning rate，并把它用于下面的实验。在这种情况下，若新方法优于 baseline，仍可以声称新方法更好，因为 suboptimal learning rate 给出的只是该方法充分调参后性能的下界。反过来，若新方法表现更差，则不能声称它一定不如 baseline，因为我们并未正确调节它的超参数。</p>
+<h4 class="problem-heading" id="sec-4-59">问题（<code>grpo_experiments_variants_on_policy</code>）：比较不同 RL 算法的表现（8 B200 小时）（10 分）</h4>
+<p>保持超参数与标准 GRPO training run 相同（使用你选择的 learning rate），分别运行以下变体，每种使用 4 个 random seed。使用 zero-shot <code>r1_zero</code> prompt。</p>
+<ul>
+<li><strong>GRPO_constant：</strong> 标准 GRPO，但在 loss aggregation 时采用 constant normalization，而不是 sequence normalization。</li>
+<li><strong>Dr_GRPO：</strong> 在 GRPO_constant 基础上令 <code>advantage_normalizer = &quot;none&quot;</code>。</li>
+<li><strong>RFT：</strong> 在 GRPO_constant 基础上令 <code>advantage_normalizer = &quot;none&quot;</code> 且 <code>baseline = &quot;none&quot;</code>。该方法无需把错误样本送入待训练模型，因此训练应更快。</li>
+<li><strong>MaxRL：</strong> 在 GRPO_constant 基础上令 <code>advantage_normalizer = &quot;mean&quot;</code>。原始 MaxRL 实现按每个 microbatch 的 token 数量归一化 loss；本作业改用 constant normalization。</li>
+</ul>
+<p>与此前运行的标准 GRPO 相比，这些方法表现如何？哪种方法的 average performance 最好，哪种方法的 variance 最低？是否有某些方法可能通过进一步调参获益？考虑各次运行之间的 variance，你对结论有多大把握？</p>
+<p class="deliverable"><strong>提交内容：</strong> 分析结论，并用所引用指标的图表支持结论。</p>
+<h2 id="sec-2-60">6 Off-policy RL</h2>
+<p>截至目前，实验和算法都完全是 on-policy：每个 gradient estimator 都使用直接从待更新模型中抽取的样本，即每个 inference batch 只执行 1 个 training step，且 train batch size 等于 inference batch size。本节将研究 off-policy RL：它对每个 inference batch 执行多个 training step，可能加快训练，但代价是潜在的不稳定性和更高的算法复杂度。</p>
+<h3 id="sec-3-61">6.1 Importance reweighting</h3>
+<p>Vanilla policy gradient 会先采样一个 response batch，再在这些 response 上执行一次 large-batch gradient step。但如果把 batch 切分成一系列 minibatch，并在每个 minibatch 上执行一次 training step，模型可能训练得更快。这种方法称为“off-policy RL”；相对地，原先每个 inference batch 只执行一次 train step 的方法称为“on-policy RL”。</p>
+<p>之所以称为 off-policy RL，是因为执行第一个 minibatch step 后，current policy 已不同于 inference 时使用的 policy。此时样本已经“off-policy”或“stale”：它们并非来自我们想要计算 policy gradient 的 current policy。用 $\pi_0$ 表示 inference policy，$\pi_\theta$ 表示 current policy，则：</p>
+<div class="math-display">$
+\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_0(y\mid x)}
+[r(y\mid x)\nabla_\theta\log\pi_\theta(y\mid x)]
+\ne
+\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_\theta(y\mid x)}
+[r(y\mid x)\nabla_\theta\log\pi_\theta(y\mid x)]. \tag{44}
+$</div>
+
+<p>左侧是“naive”off-policy estimator：我们假装 response $y$ 来自 current policy，再机械地应用与之前相同的步骤计算 policy gradient。上式表明，这个 naive estimator 并不具有正确期望。</p>
+<p>一种纠正该 bias 的方法是 importance reweighting，由此得到估计器：</p>
+<div class="math-display">$
+\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_0(y\mid x)}
+\left[\frac{\pi_\theta(y\mid x)}{\pi_0(y\mid x)}
+r(y\mid x)\nabla_\theta\log\pi_\theta(y\mid x)\right]. \tag{45}
+$</div>
+
+<p>这里应用了 importance weight $\frac{\pi_\theta(y\mid x)}{\pi_0(y\mid x)}$。它会提高对 current policy $\pi_\theta$ 仍然相关的 $y$ 的权重，并降低 $\pi_\theta(y\mid x)$ 较小的 stale sample 权重。容易验证，修改后的表达式具有正确期望：</p>
+<div class="math-display">$
+\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_0(y\mid x)}
+\left[\frac{\pi_\theta(y\mid x)}{\pi_0(y\mid x)}r(y\mid x)
+\nabla_\theta\log\pi_\theta(y\mid x)\right]
+=\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_\theta(y\mid x)}
+[r(y\mid x)\nabla_\theta\log\pi_\theta(y\mid x)]. \tag{46}
+$</div>
+
+<p>缺点是 importance reweighting 会增大估计器的 variance：如果 importance weight $\frac{\pi_\theta(y\mid x)}{\pi_0(y\mid x)}$ 最大可达 $C$，variance 也可能放大 $C$ 倍。这使 naive importance reweighting 无法直接用于语言模型，因为语言模型的 importance weight 是 $\operatorname{len}(y)$ 项之积，会随 response length 指数增长：</p>
+<div class="math-display">$
+\frac{\pi_\theta(y\mid x)}{\pi_0(y\mid x)}
+=\prod_{t=1}^{\operatorname{len}(y)}
+\frac{\pi_\theta(y_t\mid x,y_{&lt;t})}{\pi_0(y_t\mid x,y_{&lt;t})}. \tag{47}
+$</div>
+
+<p>因此，与 bias 很高但不会由 reweighting 引入额外 variance 的 naive unweighted off-policy estimator 相比，这个 reweighted estimator 没有 bias，却有很高 variance。下面的方法位于两者之间，使用各种 heuristic 在 bias—variance tradeoff 中折中。</p>
+<h3 id="sec-3-62">6.2 PPO／GRPO 风格的 importance reweighting 与 clipping</h3>
+<h4 id="sec-4-63">6.2.1 Token-level reweighting</h4>
+<p>标准方法最早由 PPO [J. Schulman et al., 2017] 提出，随后也被 GRPO [Z. Shao et al., 2024] 采用：使用 token-level importance reweighting，而不是 sequence-level reweighting。由此得到以下“unclipped token-level reweighting”估计器：</p>
+<div class="math-display">$
+\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_0(y\mid x)}
+\left[r(y\mid x)\sum_{t=1}^{\operatorname{len}(y)}
+\frac{\pi_\theta(y_t\mid x,y_{&lt;t})}{\pi_0(y_t\mid x,y_{&lt;t})}
+\nabla_\theta\log\pi_\theta(y_t\mid x,y_{&lt;t})\right]. \tag{48}
+$</div>
+
+<p>这个表达式不同于前面更“principled”的 sequence-level estimator。把后者按 timestep 展开，可以改写为：</p>
+<div class="math-display">$
+\mathbb E_{x\sim\rho}\mathbb E_{y\sim\pi_0(y\mid x)}
+\left[r(y\mid x)
+\left(\prod_{t=1}^{\operatorname{len}(y)}
+\frac{\pi_\theta(y_t\mid x,y_{&lt;t})}{\pi_0(y_t\mid x,y_{&lt;t})}\right)
+\sum_{t=1}^{\operatorname{len}(y)}
+\nabla_\theta\log\pi_\theta(y_t\mid x,y_{&lt;t})\right]. \tag{49}
+$</div>
+
+<p>在继续分析修改后的表达式之前，先注意 reweighting 项已不再随 $\operatorname{len}(y)$ 指数增长，因此 variance 显著降低。</p>
+<p>与前几节相同，为了更深入理解该估计器，我们推导它实际优化的 surrogate objective [T. Degris et al., 2013]。令 $\tilde\pi_t$ 表示如下 surrogate policy：除第 $t$ 个时间步从 current policy $\pi_\theta$ 采样外，其他时间步均从 old policy $\pi_0$ 采样：</p>
+<div class="math-display">$
+\tilde\pi_t(y\mid x)=
+\left(\prod_{s=1}^{t-1}\pi_0(y_s\mid x,y_{&lt;s})\right)
+\pi_\theta(y_t\mid x,y_{&lt;t})
+\left(\prod_{s=t+1}^{\operatorname{len}(y)}\pi_0(y_s\mid x,y_{&lt;s})\right). \tag{50}
+$</div>
+
+<p>假设所有 response 长度均为 $L$，token-level reweighting 实际会优化每个 $\tilde\pi_t$ 下的 expected reward：</p>
+<div class="math-display">$
+J_\theta^{\text{token}}
+=\mathbb E_x\left[\sum_{t=1}^L
+\mathbb E_{y\sim\tilde\pi_t(y\mid x)}[r(y\mid x)]\right]. \tag{51}
+$</div>
+
+<p>把这个 surrogate objective 用 importance reweighting 项改写，即可直接证明该结论：</p>
+<div class="math-display">$
+\begin{aligned}
+\nabla_\theta J_\theta^{\text{token}}
+&amp;=\nabla_\theta\mathbb E_x\left[\sum_{t=1}^L
+\mathbb E_{y\sim\tilde\pi_t(y\mid x)}[r(y\mid x)]\right]\\
+&amp;=\nabla_\theta\mathbb E_x\left[\sum_{t=1}^L
+\mathbb E_{y\sim\pi_0(y\mid x)}\left[
+\frac{\pi_\theta(y_t\mid x,y_{&lt;t})}{\pi_0(y_t\mid x,y_{&lt;t})}r(y\mid x)
+\right]\right]\\
+&amp;=\mathbb E_x\left[\mathbb E_{y\sim\pi_0(y\mid x)}\left[
+\sum_{t=1}^L
+\frac{\pi_\theta(y_t\mid x,y_{&lt;t})}{\pi_0(y_t\mid x,y_{&lt;t})}
+r(y\mid x)\nabla_\theta\log\pi_\theta(y_t\mid x,y_{&lt;t})
+\right]\right].
+\end{aligned} \tag{52--54}
+$</div>
+
+<p>最后一步使用了贯穿本作业的 log-derivative trick。</p>
+<p>这个 surrogate objective 直观地揭示了 token-level reweighting 引入的 bias。第一，对第 $t$ 项而言，prefix $y_{&lt;t}$ 来自 $\pi_0$ 而非 $\pi_\theta$，因而可能无法代表 current model 会产生的 prefix。第二，从 current policy $\pi_\theta$ 采样 token $y_t$ 后，suffix $y_{&gt;t}$ 来自 $\pi_0$ 而非 $\pi_\theta$。换言之，当 objective 评估 action $y_t$ 如何影响未来 step 时，它依据的是 stale policy $\pi_0$ 的行为，而不是 current policy $\pi_\theta$。Sequence-level reweighting 能正确重加权 prefix 和 suffix，从而纠正这两类 bias，但代价是更高 variance。直观上，$\pi_\theta$ 离 $\pi_0$ 越远，这些 bias 就越严重。</p>
+<h4 class="problem-heading" id="sec-4-64">问题（<code>derive_surrogate_objectives</code>）：推导 importance reweighting 方法的 surrogate objective（2 分）</h4>
+<p>上文说明了 token-level importance reweighting 会优化一组 surrogate policy 下的 expected reward；每个 surrogate policy 除一个位置外均从 old policy 采样。现在考虑一种“pairwise”importance reweighting 方法，其 policy gradient estimator 为：</p>
+<div class="math-display">$
+\sum_{t=1}^{L/2}
+\frac{\pi_\theta(y_{2t-1}\mid x,y_{&lt;2t-1})\pi_\theta(y_{2t}\mid x,y_{&lt;2t})}
+{\pi_0(y_{2t-1}\mid x,y_{&lt;2t-1})\pi_0(y_{2t}\mid x,y_{&lt;2t})}
+r(y\mid x)\nabla_\theta\log\left(
+\pi_\theta(y_{2t-1}\mid x,y_{&lt;2t-1})
+\pi_\theta(y_{2t}\mid x,y_{&lt;2t})
+\right), \tag{55}
+$</div>
+
+<p>其中 $\pi_\theta$ 是 current policy，$\pi_0$ 是 stale sampling policy，且 $y\sim\pi_0(y\mid x)$。这个估计器优化什么 surrogate objective？</p>
+<p class="deliverable"><strong>提交内容：</strong> 用部分题目参数表示的表达式，并附推导。</p>
+<h4 id="sec-4-65">6.2.2 Clipping</h4>
+<p>除了 token-level reweighting 外，PPO 与 GRPO 引入的另一项 heuristic 是 importance-weight clipping。如前所述，$\pi_\theta$ 离 $\pi_0$ 越远，importance reweighting 的 variance 越严重；surrogate objective 还告诉我们，token-level reweighting 的 bias 也会越严重。为了保持 off-policy RL 稳定，需要确保 $\pi_\theta$ 接近 $\pi_0$。</p>
+<p>最简单的方法，是减少每个 inference batch 对应的 training step 数量；但某些 inference batch 也许允许更多 step。为了尽可能发挥算法性能，我们希望在每个 inference batch 允许的范围内执行尽可能多的 step。一类常见方法，是 clipping importance weight 过大或过小的项。</p>
+<p>近期论文对 clipping 的具体实现存在分歧。本作业实现 PPO 中提出、随后延续到 GRPO 且目前占主流的 clipping 方法。首先，把 token-level reweighting 与标准 GRPO objective 结合，得到：</p>
+<div class="math-display">$
+J_\theta^{\text{GRPO-off-policy-noclip}}
+=\frac1{BG}\sum_{i=1}^B\sum_{j=1}^G
+\frac1{\operatorname{len}(y^{(i,j)})}
+\frac{r(y^{(i,j)}\mid x^{(i)})-\mu_i}{\operatorname{std}_i}
+\sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\frac{\pi_\theta(y_t\mid x,y_{&lt;t})}{\pi_0(y_t\mid x,y_{&lt;t})}. \tag{56}
+$</div>
+
+<p>样本来自 stale inference policy $\pi_0$。对该 objective 求导，会得到此前推导的 token-reweighted policy gradient estimator，只是增加了 GRPO advantage 与 sequence normalization。</p>
+<p>现在向 objective 中加入 clipping。令</p>
+<div class="math-display">$
+A^{(i,j)}=\frac{r(y^{(i,j)}\mid x^{(i)})-\mu_i}{\operatorname{std}_i}
+$</div>
+
+<p>表示 prompt $i$ 上第 $j$ 条 response 的 advantage，并令</p>
+<div class="math-display">$
+w_t^{(i,j)}=\frac{\pi_\theta(y_t\mid x,y_{&lt;t})}{\pi_0(y_t\mid x,y_{&lt;t})}
+$</div>
+
+<p>表示第 $t$ 个 importance reweighting 项。Clipped objective 为：</p>
+<div class="math-display">$
+J_\theta^{\text{GRPO-off-policy-clip}}
+=\frac1{BG}\sum_{i=1}^B\sum_{j=1}^G
+\frac1{\operatorname{len}(y^{(i,j)})}
+\sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\min\left(
+A^{(i,j)}w_t^{(i,j)},
+A^{(i,j)}\operatorname{clip}(w_t^{(i,j)},[1-\varepsilon,1+\varepsilon])
+\right), \tag{57}
+$</div>
+
+<p>其中 $\operatorname{clip}(w,[1-\varepsilon,1+\varepsilon])=\min(\max(w,1-\varepsilon),1+\varepsilon)$，即把 importance weight clipping 到区间 $[1-\varepsilon,1+\varepsilon]$。该 objective 还可以用更直观的形式表示 [J. Achiam, 2018]：</p>
+<div class="math-display">$
+J_\theta^{\text{GRPO-off-policy-clip}}
+=\frac1{BG}\sum_{i=1}^B\sum_{j=1}^G
+\frac1{\operatorname{len}(y^{(i,j)})}
+\sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\begin{cases}
+\min(w_t^{(i,j)},1+\varepsilon)A^{(i,j)}, &amp; A^{(i,j)}\ge0,\\
+\max(w_t^{(i,j)},1-\varepsilon)A^{(i,j)}, &amp; A^{(i,j)}&lt;0.
+\end{cases} \tag{58}
+$</div>
+
+<p>在这个 objective 下，模型会提高高-advantage action 的权重，直到该 action 的权重比 old policy 高 $1+\varepsilon$ 倍。到达该点后，<code>min</code> 选择 $1+\varepsilon$ 分支，对这个常数分支求导得到 zero gradient。Negative-advantage action 的情况类似：模型会降低 action 权重，直到其权重比 old policy 低 $1-\varepsilon$ 倍，此后该 action 的 gradient 变为 0。对 objective 求 gradient，得到 policy gradient estimator：</p>
+<div class="math-display">$
+\nabla_\theta J_\theta^{\text{GRPO-off-policy-clip}}
+=\frac1{BG}\sum_{i=1}^B\sum_{j=1}^G
+\frac1{\operatorname{len}(y^{(i,j)})}
+\sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\operatorname{mask}_t^{(i,j)}w_t^{(i,j)}A^{(i,j)}
+\nabla_\theta\log\pi_\theta(y_t\mid x,y_{&lt;t}), \tag{59}
+$</div>
+
+<p>其中 mask function 为：</p>
+<div class="math-display">$
+\operatorname{mask}_t^{(i,j)}=
+\begin{cases}
+\mathbb 1\{w_t^{(i,j)}&lt;1+\varepsilon\}, &amp; A^{(i,j)}\ge0,\\
+\mathbb 1\{w_t^{(i,j)}&gt;1-\varepsilon\}, &amp; A^{(i,j)}&lt;0.
+\end{cases} \tag{60}
+$</div>
+
+<p>它会屏蔽 positive advantage 对应的过大 importance weight，以及 negative advantage 对应的过小 importance weight。</p>
+<p>现在已经具备在 loss function 中实现 <code>importance_reweighting_method = &quot;noclip&quot;</code> 与 <code>importance_reweighting_method = &quot;grpo&quot;</code> 所需的数学工具；它们分别对应 $J_\theta^{\text{GRPO-off-policy-noclip}}$ 与 $J_\theta^{\text{GRPO-off-policy-clip}}$。与 on-policy 情况一样，loss 实现应返回 objective 的负值，使 gradient descent 执行预期的 gradient ascent update。</p>
+<h4 class="problem-heading" id="sec-4-66">问题（<code>compute_policy_gradient_loss_off_policy</code>）：使用 token-level reweighting 的 off-policy policy gradient（1 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 更新 <code>compute_policy_gradient_loss</code>，支持使用 <code>old_log_probs</code> 与 <code>cliprange</code> 参数的 <code>importance_reweighting_method = &quot;noclip&quot;</code> 或 <code>&quot;grpo&quot;</code>。<code>old_log_probs</code> 表示生成 rollout 的模型在每个 token 上的 log-probability；你需要在 training script 中增加几行代码来计算它。<code>cliprange</code> 表示 clipping strength 参数 $\varepsilon$。</p>
+<p>为了测试代码，请实现 <code>[adapters.run_compute_policy_gradient_loss]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k test_compute_policy_gradient_loss_off_policy
+</code></pre>
+<p>确保测试通过。</p>
+<p class="problem-box-end"><strong>补充说明：</strong> PPO 用 clipping 防止 current policy 偏离 old policy 过远；也可以把它看作降低 importance-reweighted estimator variance 的方法，因为它压缩了过大的 importance weight。如果不太担心偏离 old policy，并希望更激进地更新，一个更简单直接的 variance 控制方法，是直接在 gradient estimator 中只对 importance weight 设置上界：</p>
+<div class="math-display">$
+\hat g\leftarrow\frac1{BG}\sum_{i=1}^B\sum_{j=1}^G
+\frac1{\operatorname{len}(y^{(i,j)})}
+\sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\min(w_t^{(i,j)},1+\varepsilon)A^{(i,j)}
+\nabla_\theta\log\pi_\theta(y_t\mid x,y_{&lt;t}). \tag{61}
+$</div>
+
+<p>与 PPO／GRPO 不同，即使某个 action 的权重增加超过 $1+\varepsilon$，这里仍会产生 non-zero gradient。CISPO [MiniMax et al., 2025] 提出了这种更简单的 clipping 流程。注意，CISPO 还会按 per-group token count 而非 per-sequence length 做归一化；为简化表达，上式仍写成 sequence-normalized objective。你也可以选择实现 CISPO，并与其他 clipping 方法比较。</p>
+<h3 id="sec-3-67">6.3 GSPO</h3>
+<p>如上所述，token-level reweighting 会产生 bias，因为它忽略了 prefix 与 suffix 的 reweighting。GSPO 论文 [C. Zheng et al., 2025] 发现 GRPO 不稳定，并主张改用 sequence-level reweighting。Sequence-level importance weight 是 $L$ 项之积；为了规避这一问题，GSPO 直接把该表达式取 $1/L$ 次幂。换言之，它使用整条 sequence 上 importance weight 的 geometric mean，而不是乘积。得到 loss function：</p>
+<div class="math-display">$
+J_\theta^{\text{GRPO-off-policy-gspo}}
+=\frac1{BG}\sum_{i=1}^B\sum_{j=1}^G
+\min\left(
+A^{(i,j)}s^{(i,j)},
+A^{(i,j)}\operatorname{clip}(s^{(i,j)},[1-\varepsilon,1+\varepsilon])
+\right), \tag{62}
+$</div>
+
+<p>这里使用在所有 timestep 之间共享的 sequence-level importance weight $s^{(i,j)}$：</p>
+<div class="math-display">$
+s^{(i,j)}=\left(
+\prod_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\frac{\pi_\theta(y_t\mid x,y_{&lt;t})}{\pi_0(y_t\mid x,y_{&lt;t})}
+\right)^{1/\operatorname{len}(y^{(i,j)})}. \tag{63}
+$</div>
+
+<p>如果没有 $1/\operatorname{len}(y^{(i,j)})$ 次幂，也不使用 clipping，该 objective 就退化为 sequence-level importance-reweighted policy gradient loss。Geometric mean 与 clipping 以引入 bias 为代价降低 variance。另一个特点是：求 gradient 时，geometric mean 的幂会自然产生 sequence-length normalization。为简洁起见，下面的等式忽略 clipping：</p>
+<div class="math-display">$
+\nabla_\theta J_\theta^{\text{GRPO-off-policy-gspo}}
+=\frac1{BG}\sum_{i=1}^B\sum_{j=1}^G
+A^{(i,j)}\nabla_\theta s^{(i,j)} \tag{64}
+$</div>
+
+<div class="math-display">$
+=\frac1{BG}\sum_{i=1}^B\sum_{j=1}^G
+A^{(i,j)}s^{(i,j)}
+\frac1{\operatorname{len}(y^{(i,j)})}
+\sum_{t=1}^{\operatorname{len}(y^{(i,j)})}
+\nabla_\theta\log\pi_\theta(y_t\mid x,y_{&lt;t}). \tag{65}
+$</div>
+
+<p>因此，如果希望把 GSPO 应用于你偏好的 constant-normalized RL 算法（可选），就需要修改 sequence-level importance weight 中的指数。</p>
+<h4 class="problem-heading" id="sec-4-68">问题（<code>think_about_importance_reweighting</code>）：思考 importance reweighting（2 分）</h4>
+<p>考虑 off-policy RL 的三种 importance reweighting 策略：(a) 不做 importance reweighting；(b) PPO／GRPO 风格的 clipped token-level importance reweighting；(c) 使用 geometric mean 的 GSPO 风格 clipped sequence-level importance reweighting。就 bias 与 variance 的权衡而言，三者分别位于怎样的位置？你能否想到某些情形，使其中一种方法直观上优于另外两种？</p>
+<p class="deliverable"><strong>提交内容：</strong> 几句分析。</p>
+<p class="problem-box-end">下面实现 GSPO loss。请记得以数值稳定的方式计算 geometric mean。</p>
+<h4 class="problem-heading" id="sec-4-69">问题（<code>compute_policy_gradient_loss_off_policy_gspo</code>）：使用 sequence-level reweighting 的 off-policy policy gradient（1 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 更新 <code>compute_policy_gradient_loss</code>，支持使用 <code>old_log_probs</code> 和 <code>cliprange</code> 参数的 <code>importance_reweighting_method = &quot;gspo&quot;</code>。<code>old_log_probs</code> 表示生成 rollout 的模型在每个 token 上的 log-probability；需要在 training script 中增加几行代码计算它。<code>cliprange</code> 表示 clipping strength 参数 $\varepsilon$。与上文相同，返回 objective 的负值，使最小化 loss 等价于执行 gradient ascent。</p>
+<p>为了测试代码，请实现 <code>[adapters.run_compute_policy_gradient_loss]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k test_compute_policy_gradient_loss_off_policy_gspo
+</code></pre>
+<p>确保测试通过。</p>
+<h3 id="sec-3-70">6.4 实验</h3>
+<p>现在已经具备更新 <code>grpo_train_step</code> 以支持 off-policy training 所需的全部组件。</p>
+<h4 class="problem-heading" id="sec-4-71">问题（<code>grpo_train_step_off_policy</code>）：Off-policy GRPO train step（2.5 分）</h4>
+<p class="deliverable"><strong>提交内容：</strong> 更新 <code>grpo_train_step</code>，支持 off-policy 参数 <code>importance_reweighting_method</code>、<code>old_log_probs</code> 与 <code>cliprange</code>。该函数现在应支持完整参数范围。</p>
+<p>为了测试代码，请实现 <code>[adapters.run_grpo_train_step]</code>，然后运行：</p>
+<pre><code class="language-bash">uv run pytest -k test_grpo_train_step_off_policy
+</code></pre>
+<p>确认测试通过。</p>
+<p class="problem-box-end">把训练变为 off-policy 是否真的更快？会损失多少稳定性？哪种 reweighting／clipping 方法最好？下面的实验将探索这些问题。除以下改动外，保持超参数与此前 RL run 一致。现在使用 32× off-policy，即每个 inference batch 执行 32 个 training step：</p>
+<pre><code class="language-python">rollout_batch_size = 256
+train_batch_size = 8
+gradient_accumulation_steps = 1
+</code></pre>
+<p>默认可以使用原始论文给出的以下 clipping range（即前文推导中的 $\varepsilon$）；也可以自行调节这些值：</p>
+<ul>
+<li><code>offpolicy_clip</code>：<code>cliprange = 0.2</code></li>
+<li><code>offpolicy_gspo</code>：<code>cliprange = 3e-4</code></li>
+</ul>
+<p>还需要在 training script 中增加几行代码计算 <code>old_log_probs</code>，并把它传给 reweighted loss。</p>
+<h4 class="problem-heading" id="sec-4-72">问题（<code>grpo_experiments_off_policy</code>）：比较不同 off-policy 算法的表现（8 B200 小时）（10 分）</h4>
+<p>保持超参数与标准 GRPO training run 相同（使用你选择的 learning rate），分别运行以下变体，每种使用 4 个 random seed。使用 zero-shot <code>r1_zero</code> prompt。如果愿意，也可以采用上一节中你最喜欢的 RL 算法变体，而不必坚持使用标准版本。</p>
+<ul>
+<li><strong>offpolicy_naive：</strong> 不再令 inference batch size 与 training batch size 相同（均为 256），而是把 training batch size 减少到 inference batch size 的 $1/32$，即 $256/32=8$。记得按相同比例减少 gradient accumulation step 数量，使 GPU 仍能得到充分利用。保持 <code>importance_reweighting_method = &quot;none&quot;</code>。</li>
+<li><strong>offpolicy_noclip：</strong> 在 offpolicy_naive 基础上令 <code>importance_reweighting_method = &quot;noclip&quot;</code>。</li>
+<li><strong>offpolicy_clip：</strong> 在 offpolicy_naive 基础上令 <code>importance_reweighting_method = &quot;grpo&quot;</code>。</li>
+<li><strong>offpolicy_gspo：</strong> 在 offpolicy_naive 基础上令 <code>importance_reweighting_method = &quot;gspo&quot;</code>。</li>
+</ul>
+<p>除了已经记录的指标，还要记录 clip fraction。</p>
+<p>与此前 fully on-policy GRPO run 相比，这些方法表现如何？Off-policy 会怎样影响训练稳定性和不同运行之间的 variance？两种 clipping 方法的 clip fraction 有何差异，哪一种似乎更稳定？是否有方法可能从更多 hyperparameter tuning 中获益？考虑不同运行之间的 variance，你对结论有多大把握？</p>
+<p class="deliverable"><strong>提交内容：</strong> 分析结论，并用所引用指标的图表支持结论。</p>
+<h2 id="sec-2-73">7 尝试你自己的 policy gradient estimator</h2>
+<h4 class="problem-heading" id="sec-4-74">问题（<code>try_your_own</code>）：尝试你自己的 policy gradient estimator（10 分）</h4>
+<p>现在，你已经见过文献中提出的多种 policy gradient estimator，也学习了它们背后的部分理论。接下来，该由你提出自己的方法了！下面给出一些建议：</p>
+<ul>
+<li>尝试不同的 advantage estimator，从而对 prompt 引入不同的 reweighting；</li>
+<li>尝试不同的 importance reweighting 策略；</li>
+<li>在 advantage estimator 中尝试不同的 reward baseline。</li>
+</ul>
+<p>提出你自己的 policy gradient estimator。随后，在相同的 OLMo-2-0425-1B + GSM8K RL 设置下运行它，并把它与已经尝试过的方法作为 baseline 进行比较。使用多个 random seed，并固定题目参数，使结果可比。相对于此前方法，只改变一项内容；也就是说，作业中至少应存在一种先前方法，使你的方法与它相比只改变一项设计。</p>
+<p>你提出的修改有什么理论依据或直觉？它能否击败 baseline？</p>
+<p class="deliverable"><strong>提交内容：</strong> 分析结论，并用所引用指标的图表支持结论；如果数学推导有助于论证，也可以附上推导。</p>
+<h3 id="sec-3-75">参考文献</h3>
+<p>[1] J. Li et al., “DataComp-LM: In search of the next generation of training sets for language models.” [Online]. Available: <a href="https://arxiv.org/abs/2406.11794">https://arxiv.org/abs/2406.11794</a></p>
+<p>[2] T. OLMo et al., “2 OLMo 2 Furious.” [Online]. Available: <a href="https://arxiv.org/abs/2501.00656">https://arxiv.org/abs/2501.00656</a></p>
+<p>[3] K. Cobbe et al., “Training Verifiers to Solve Math Word Problems.” [Online]. Available: <a href="https://arxiv.org/abs/2110.14168">https://arxiv.org/abs/2110.14168</a></p>
+<p>[4] DeepSeek-AI et al., “DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning.” [Online]. Available: <a href="https://arxiv.org/abs/2501.12948">https://arxiv.org/abs/2501.12948</a></p>
+<p>[5] W. Kwon et al., “Efficient Memory Management for Large Language Model Serving with PagedAttention.” 2023.</p>
+<p>[6] Z. Liu et al., “Understanding R1-Zero-Like Training: A Critical Perspective.” [Online]. Available: <a href="https://arxiv.org/abs/2503.20783">https://arxiv.org/abs/2503.20783</a></p>
+<p>[7] OpenAI et al., “OpenAI o1 System Card.” [Online]. Available: <a href="https://arxiv.org/abs/2412.16720">https://arxiv.org/abs/2412.16720</a></p>
+<p>[8] Z. Shao et al., “DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models.” [Online]. Available: <a href="https://arxiv.org/abs/2402.03300">https://arxiv.org/abs/2402.03300</a></p>
+<p>[9] J. Achiam, “Spinning Up in Deep Reinforcement Learning,” 2018.</p>
+<p>[10] N. Lambert, “Reinforcement Learning from Human Feedback.” [Online]. Available: <a href="https://rlhfbook.com/">https://rlhfbook.com/</a></p>
+<p>[11] R. J. Williams, “Simple statistical gradient-following algorithms for connectionist reinforcement learning,” <em>Machine Learning</em>, vol. 8, no. 3–4, pp. 229–256, 1992, doi: <a href="https://doi.org/10.1007/BF00992696">https://doi.org/10.1007/BF00992696</a>.</p>
+<p>[12] F. Tajwar et al., “Maximum Likelihood Reinforcement Learning.” [Online]. Available: <a href="https://arxiv.org/abs/2602.02710">https://arxiv.org/abs/2602.02710</a></p>
+<p>[13] J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov, “Proximal Policy Optimization Algorithms.” [Online]. Available: <a href="https://arxiv.org/abs/1707.06347">https://arxiv.org/abs/1707.06347</a></p>
+<p>[14] T. Degris, M. White, and R. S. Sutton, “Off-Policy Actor-Critic.” [Online]. Available: <a href="https://arxiv.org/abs/1205.4839">https://arxiv.org/abs/1205.4839</a></p>
+<p>[15] J. Achiam, “Simplified PPO-Clip Objective.” [Online]. Available: <a href="https://drive.google.com/file/d/1PDzn9RPvaXjJFZkGeapMHbHGjWWW20Ey/view">https://drive.google.com/file/d/1PDzn9RPvaXjJFZkGeapMHbHGjWWW20Ey/view</a></p>
+<p>[16] MiniMax et al., “MiniMax-M1: Scaling Test-Time Compute Efficiently with Lightning Attention.” [Online]. Available: <a href="https://arxiv.org/abs/2506.13585">https://arxiv.org/abs/2506.13585</a></p>
+<p>[17] C. Zheng et al., “Group Sequence Policy Optimization.” [Online]. Available: <a href="https://arxiv.org/abs/2507.18071">https://arxiv.org/abs/2507.18071</a></p>
+
+</main>
+<script>
+(() => {
+  for (const heading of [...document.querySelectorAll('.problem-heading')]) {
+    const box = document.createElement('section');
+    box.className = 'problem-box';
+    heading.parentNode.insertBefore(box, heading);
+    box.appendChild(heading);
+    while (box.nextSibling) {
+      const next = box.nextSibling;
+      if (/^H[1-6]$/.test(next.nodeName) || next.classList?.contains('problem-box-end')) break;
+      box.appendChild(next);
+    }
+  }
+
+  const storageKey = 'cs336-assignment5-toc-hidden';
+  const button = document.getElementById('toc-toggle');
+  const stored = localStorage.getItem(storageKey);
+  const initiallyHidden = stored === null ? window.innerWidth < 1180 : stored === '1';
+  document.body.classList.toggle('toc-hidden', initiallyHidden);
+
+  function syncButton() {
+    const hidden = document.body.classList.contains('toc-hidden');
+    button.textContent = hidden ? '显示目录' : '隐藏目录';
+    button.setAttribute('aria-expanded', String(!hidden));
+  }
+  syncButton();
+  button.addEventListener('click', () => {
+    document.body.classList.toggle('toc-hidden');
+    localStorage.setItem(storageKey, document.body.classList.contains('toc-hidden') ? '1' : '0');
+    syncButton();
+  });
+
+  for (const link of document.querySelectorAll('#toc a')) {
+    link.addEventListener('click', () => {
+      if (window.innerWidth < 1180) {
+        document.body.classList.add('toc-hidden');
+        localStorage.setItem(storageKey, '1');
+        syncButton();
+      }
+    });
+  }
+
+  const tocLinks = new Map([...document.querySelectorAll('#toc a')].map((a) => [a.hash.slice(1), a]));
+  const observer = new IntersectionObserver((entries) => {
+    const visible = entries
+      .filter((entry) => entry.isIntersecting)
+      .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+    if (!visible) return;
+    for (const link of tocLinks.values()) link.classList.remove('active');
+    tocLinks.get(visible.target.id)?.classList.add('active');
+  }, { rootMargin: '-12% 0px -75% 0px' });
+
+  for (const id of tocLinks.keys()) {
+    const heading = document.getElementById(id);
+    if (heading) observer.observe(heading);
+  }
+})();
+</script>
+</body>
+</html>
