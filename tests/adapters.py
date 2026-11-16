@@ -43,8 +43,10 @@ def run_compute_group_normalized_rewards(
     advantage_eps: float = 1e-6,
     advantage_normalizer: Literal["std", "none", "mean"] = "std",
 ) -> tuple[torch.Tensor, dict[str, float]]:
-    from cs336_alignment.on_policy_GRPO.compute_group_normalized_rewards import compute_group_normalized_rewards
-    return compute_group_normalized_rewards(raw_rewards, group_size, baseline, advantage_eps, advantage_normalizer)
+    # from cs336_alignment.on_policy_GRPO.compute_group_normalized_rewards import compute_group_normalized_rewards
+    # return compute_group_normalized_rewards(raw_rewards, group_size, baseline, advantage_eps, advantage_normalizer)
+    from cs336_alignment.Dr_GRPO.compute_group_normalized_rewards_drgrpo import compute_group_normalized_rewards_drgrpo
+    return compute_group_normalized_rewards_drgrpo(raw_rewards, group_size, baseline, advantage_eps, advantage_normalizer)
 
 def run_compute_policy_gradient_loss(
     raw_rewards_or_advantages: torch.Tensor,
@@ -64,8 +66,10 @@ def run_aggregate_loss_across_microbatch(
     loss_normalization: Literal["sequence", "constant"] = "sequence",
     normalization_constant: int | None = None,
 ) -> torch.Tensor:
-    from cs336_alignment.on_policy_GRPO.aggregate_loss_across_microbatch import aggregate_loss_across_microbatch
-    return aggregate_loss_across_microbatch(per_token_policy_gradient_loss, mask, loss_normalization, normalization_constant)
+    # from cs336_alignment.on_policy_GRPO.aggregate_loss_across_microbatch import aggregate_loss_across_microbatch
+    # return aggregate_loss_across_microbatch(per_token_policy_gradient_loss, mask, loss_normalization, normalization_constant)
+    from cs336_alignment.Dr_GRPO.aggregate_loss_across_microbatch_constant import aggregate_loss_across_microbatch_constant
+    return aggregate_loss_across_microbatch_constant(per_token_policy_gradient_loss, mask, loss_normalization, normalization_constant)
 
 
 def run_grpo_train_step(
