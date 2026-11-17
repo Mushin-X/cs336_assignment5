@@ -45,8 +45,10 @@ def run_compute_group_normalized_rewards(
 ) -> tuple[torch.Tensor, dict[str, float]]:
     # from cs336_alignment.on_policy_GRPO.compute_group_normalized_rewards import compute_group_normalized_rewards
     # return compute_group_normalized_rewards(raw_rewards, group_size, baseline, advantage_eps, advantage_normalizer)
-    from cs336_alignment.Dr_GRPO.compute_group_normalized_rewards_drgrpo import compute_group_normalized_rewards_drgrpo
-    return compute_group_normalized_rewards_drgrpo(raw_rewards, group_size, baseline, advantage_eps, advantage_normalizer)
+    # from cs336_alignment.Dr_GRPO.compute_group_normalized_rewards_drgrpo import compute_group_normalized_rewards_drgrpo
+    # return compute_group_normalized_rewards_drgrpo(raw_rewards, group_size, baseline, advantage_eps, advantage_normalizer)
+    from cs336_alignment.other_rl.compute_group_normalized_rewards_maxrl import compute_group_normalized_rewards_maxrl
+    return compute_group_normalized_rewards_maxrl(raw_rewards, group_size, baseline, advantage_eps, advantage_normalizer)
 
 def run_compute_policy_gradient_loss(
     raw_rewards_or_advantages: torch.Tensor,
