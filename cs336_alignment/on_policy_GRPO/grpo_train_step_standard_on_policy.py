@@ -10,6 +10,8 @@ from cs336_alignment.on_policy_GRPO.compute_policy_gradient_loss_on_policy impor
 from cs336_alignment.on_policy_GRPO.compute_rollout_rewards import compute_rollout_rewards
 from cs336_alignment.on_policy_GRPO.get_response_log_probs import get_response_log_probs
 from cs336_alignment.on_policy_GRPO.tokenize_prompt_and_output import tokenize_prompt_and_output
+from cs336_alignment.Dr_GRPO.aggregate_loss_across_microbatch_constant import aggregate_loss_across_microbatch_constant
+from cs336_alignment.other_rl.compute_group_normalized_rewards_maxrl import compute_group_normalized_rewards_maxrl
 
 def clip_grad_norm(params, max_grad_norm, eps=1e-6):
     grad_params = [p.grad for p in params if p.grad is not None]
@@ -73,7 +75,7 @@ def grpo_train_step(
         #2、将回答与标准答案对比得出奖励
         #3、将奖励进行减均值并归一化得到 归一化后的优势
         reward, _ = compute_rollout_rewards(reward_fn, now_rollout_responses, now_repeated_ground_truths) #(b * g)
-        advantage, _ = compute_group_normalized_rewards(reward, group_size, baseline, advantage_eps, advantage_normalizer) # (b * g)
+        advantage, _ = compute_group_normalized_rewards_maxrl(reward, group_size, baseline, advantage_eps, advantage_normalizer) # (b * g)
 
         #4、计算每个 token 的对数概率
         log_probs = get_response_log_probs(model, input_ids, labels)["log_probs"]
@@ -82,7 +84,9 @@ def grpo_train_step(
         token_loss, _ = compute_policy_gradient_loss(advantage, log_probs, importance_reweighting_method, old_log_probs, cliprange, response_mask)
 
         #6、计算一个微批次的损失
-        loss = aggregate_loss_across_microbatch(token_loss, response_mask, loss_normalization, normalization_constant) * microbatch_size / bg_size
+        loss = aggregate_loss_across_microbatch_constant(token_loss, response_mask, loss_normalization, normalization_constant)
+        if loss_normalization == "sequence":
+            loss = loss * microbatch_size / bg_size
 
         loss.backward()
         total_loss += loss.detach()
