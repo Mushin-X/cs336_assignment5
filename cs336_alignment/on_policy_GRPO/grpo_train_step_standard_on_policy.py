@@ -12,6 +12,7 @@ from cs336_alignment.on_policy_GRPO.get_response_log_probs import get_response_l
 from cs336_alignment.on_policy_GRPO.tokenize_prompt_and_output import tokenize_prompt_and_output
 from cs336_alignment.Dr_GRPO.aggregate_loss_across_microbatch_constant import aggregate_loss_across_microbatch_constant
 from cs336_alignment.other_rl.compute_group_normalized_rewards_maxrl import compute_group_normalized_rewards_maxrl
+from cs336_alignment.off_policy_GRPO.compute_policy_gradient_loss_off_policy_gspo import compute_policy_gradient_loss_off_policy_gspo
 
 def clip_grad_norm(params, max_grad_norm, eps=1e-6):
     grad_params = [p.grad for p in params if p.grad is not None]
@@ -81,7 +82,12 @@ def grpo_train_step(
         log_probs = get_response_log_probs(model, input_ids, labels)["log_probs"]
 
         #5、计算每个 token 的损失
-        token_loss, _ = compute_policy_gradient_loss(advantage, log_probs, importance_reweighting_method, old_log_probs, cliprange, response_mask)
+        if old_log_probs is not None:
+            now_old_log_probs = old_log_probs[i : i + microbatch_size]
+            #注意：由于每个 seq 长度不同，因此我们在计算 log_probs时会进行对齐
+            #而旧回答各 seq 长度和当前回答的seq 长度是不一致的，因此这里也要对齐
+            now_old_log_probs = now_old_log_probs[:, :log_probs.shape[1]]
+        token_loss, _ = compute_policy_gradient_loss_off_policy_gspo(advantage, log_probs, importance_reweighting_method, now_old_log_probs, cliprange, response_mask)
 
         #6、计算一个微批次的损失
         loss = aggregate_loss_across_microbatch_constant(token_loss, response_mask, loss_normalization, normalization_constant)

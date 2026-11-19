@@ -58,9 +58,12 @@ def run_compute_policy_gradient_loss(
     cliprange: float | None = None,
     response_mask: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
-    from cs336_alignment.on_policy_GRPO.compute_policy_gradient_loss_on_policy import compute_policy_gradient_loss
-    return compute_policy_gradient_loss(raw_rewards_or_advantages, policy_log_probs, importance_reweighting_method, old_log_probs, cliprange, response_mask)
-
+    # from cs336_alignment.on_policy_GRPO.compute_policy_gradient_loss_on_policy import compute_policy_gradient_loss
+    # return compute_policy_gradient_loss(raw_rewards_or_advantages, policy_log_probs, importance_reweighting_method, old_log_probs, cliprange, response_mask)
+    # from cs336_alignment.off_policy_GRPO.compute_policy_gradient_loss_off_policy import compute_policy_gradient_loss_off_policy
+    # return compute_policy_gradient_loss_off_policy(raw_rewards_or_advantages, policy_log_probs, importance_reweighting_method, old_log_probs, cliprange, response_mask)
+    from cs336_alignment.off_policy_GRPO.compute_policy_gradient_loss_off_policy_gspo import compute_policy_gradient_loss_off_policy_gspo
+    return compute_policy_gradient_loss_off_policy_gspo(raw_rewards_or_advantages, policy_log_probs, importance_reweighting_method, old_log_probs, cliprange, response_mask)
 
 def run_aggregate_loss_across_microbatch(
     per_token_policy_gradient_loss: torch.Tensor,
